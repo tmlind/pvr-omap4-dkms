@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: OpenVG
+Description: PowerVR OpenVG library
+Version: 
+Libs: -L${libdir} -lOpenVG
+Cflags: -I${includedir}

@@ -1,0 +1,15 @@
+Package: sgx-lib-dbgsym
+Source: sgx-lib
+Version: 1.7.10.0.1-1glp21
+Depends: sgx-lib (= 1.7.10.0.1-1glp21)
+Architecture: armhf
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 10938
+Section: graphics
+Priority: extra
+Homepage: https://gforge01.dal.design.ti.com/gf/project/gfx_l24_ddk2/
+Description: debug symbols for package sgx-lib
+ SGX540 (PowerVR) Linux libraries for OMAP4.
+ .
+ This comprises libraries for OpenGL ES 1.1, 2.0,
+ OpenVG and test applications.

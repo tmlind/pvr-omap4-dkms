@@ -1,0 +1,10 @@
+fetch-pvr-omap
+Thu Mar  1 08:53:23 CET 2012
+===
+
+"Fetched" packages:
+
+- sgx-lib_1.7.10.0.1-1glp21_armhf.deb
+- sgx-lib-data_1.7.10.0.1-1glp21_all.deb
+- sgx-lib-dev_1.7.10.0.1-1glp21_armhf.deb
+- sgx-lib-dbgsym_1.7.10.0.1-1glp21_armhf.ddeb

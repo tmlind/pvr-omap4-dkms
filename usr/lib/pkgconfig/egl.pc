@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: EGL
+Description: PowerVR EGL library
+Version: 
+Libs: -L${libdir} -lEGL
+Cflags: -I${includedir}

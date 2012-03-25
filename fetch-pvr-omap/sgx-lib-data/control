@@ -1,0 +1,19 @@
+Package: sgx-lib-data
+Source: sgx-lib
+Version: 1.7.10.0.1-1glp21
+Architecture: all
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 40
+Suggests: sgx-lib
+Conflicts: pvr-omap4-data
+Replaces: pvr-omap4-data
+Section: graphics
+Priority: optional
+Homepage: https://gforge01.dal.design.ti.com/gf/project/gfx_l24_ddk2/
+Description: SGX540 libraries for OMAP4, data files
+ SGX540 (PowerVR) Linux libraries for OMAP4.
+ .
+ This comprises libraries for OpenGL ES 1.1, 2.0,
+ OpenVG and test applications.
+ .
+ This package contains the data files.

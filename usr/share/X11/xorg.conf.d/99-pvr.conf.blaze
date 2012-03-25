@@ -1,0 +1,37 @@
+# X.Org X server configuration file
+
+Section "Device"
+	Identifier	"Video Device"
+	Driver     	"pvr"
+	Option		"FlipChain"	"true"
+	Option		"NoAccel"	"false"
+        Option          "monitor-pvr0" "ts1"
+        Option          "monitor-pvr1" "ts2"
+        Option          "monitor-pvr2" "hdmi"
+EndSection
+
+Section "Monitor"
+	Identifier	"ts1"
+        Option "Below"  "ts2"
+EndSection
+
+Section "Monitor"
+	Identifier	"ts2"
+EndSection
+
+Section "Monitor"
+	Identifier	"hdmi"
+        Option "Below"  "ts1"
+EndSection
+
+Section "Screen"
+	Identifier	"Default Screen"
+	Monitor		"ts2"
+	Device		"Video Device"
+EndSection
+
+Section "ServerLayout"
+	Identifier	"Server Layout"
+	Screen		"Default Screen"
+EndSection
+

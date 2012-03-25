@@ -1,0 +1,18 @@
+Package: sgx-lib-dev
+Source: sgx-lib
+Version: 1.7.10.0.1-1glp21
+Architecture: armhf
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 301
+Depends: sgx-lib (= 1.7.10.0.1-1glp21), libx11-dev
+Conflicts: libegl1-mesa-dev, libegl1-sgx-omap4-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles1-sgx-omap4-dev, libgles2-dev, libgles2-mesa-dev, libgles2-sgx-omap4-dev, libopenvg1-dev, libopenvg1-mesa-dev, libopenvg1-sgx-omap4-dev
+Replaces: libegl1-mesa-dev, libegl1-sgx-omap4-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles1-sgx-omap4-dev, libgles2-dev, libgles2-mesa-dev, libgles2-sgx-omap4-dev, libopenvg1-dev, libopenvg1-mesa-dev, libopenvg1-sgx-omap4-dev
+Provides: libegl1-mesa-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles2-dev, libgles2-mesa-dev, libopenvg1-dev, libopenvg1-mesa-dev
+Section: graphics
+Priority: extra
+Homepage: https://gforge01.dal.design.ti.com/gf/project/gfx_l24_ddk2/
+Description: SGX540 development files for OMAP4
+ SGX540 (PowerVR) development files for OMAP4.
+ .
+ This package provides the development files needed to build applications using
+ the OpenGL|ES APIs.

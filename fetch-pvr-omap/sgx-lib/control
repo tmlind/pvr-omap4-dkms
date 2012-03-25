@@ -1,0 +1,18 @@
+Package: sgx-lib
+Version: 1.7.10.0.1-1glp21
+Architecture: armhf
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 2423
+Depends: libc6 (>= 2.11), libdrm2 (>= 2.4.3), libgcc1 (>= 1:4.4.0), libstdc++6 (>= 4.1.1), libx11-6 (>= 2:1.4.99.1), libxext6, libxfixes3, sgx-lib-data (= 1.7.10.0.1-1glp21)
+Suggests: sgx-lib-doc
+Conflicts: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, libopenvg1, libopenvg1-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
+Replaces: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, libopenvg1, libopenvg1-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
+Provides: libegl1-x11, libgles1, libgles2, libopenvg1
+Section: graphics
+Priority: extra
+Homepage: https://gforge01.dal.design.ti.com/gf/project/gfx_l24_ddk2/
+Description: SGX540 libraries for OMAP4
+ SGX540 (PowerVR) Linux libraries for OMAP4.
+ .
+ This comprises libraries for OpenGL ES 1.1, 2.0,
+ OpenVG and test applications.
