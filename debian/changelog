@@ -1,4 +1,4 @@
-pvr-omap4 (1.7.10.0.1.21-0ubuntu1) UNRELEASED; urgency=low
+pvr-omap4 (1.7.10.0.1.21-0ubuntu1) precise; urgency=low
 
   * Initial release, based on package provided at TI's release PPA
     https://launchpad.net/~tiomap-dev/+archive/release
