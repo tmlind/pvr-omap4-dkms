@@ -1,0 +1,8 @@
+PACKAGE_NAME="#DRIVERNAME#"
+PACKAGE_VERSION="#VERSION#"
+CLEAN="make clean"
+MAKE[0]="make all KVERSION=$kernelver"
+BUILT_MODULE_NAME[0]="omapdrm_pvr"
+DEST_MODULE_LOCATION[0]="/updates"
+AUTOINSTALL="yes"
+PATCH[0]="disable_pm_runtime_put_sync.patch"

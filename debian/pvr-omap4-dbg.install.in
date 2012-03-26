@@ -1,0 +1,2 @@
+usr/lib/debug/usr/lib/lib*.so*		#PKGDLIBDIR#
+usr/lib/debug/usr/lib/xorg		#PKGDLIBDIR#

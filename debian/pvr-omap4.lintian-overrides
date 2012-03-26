@@ -1,0 +1,4 @@
+unknown-section restricted/misc
+postinst-has-useless-call-to-ldconfig
+prerm-calls-ldconfig
+postrm-has-useless-call-to-ldconfig

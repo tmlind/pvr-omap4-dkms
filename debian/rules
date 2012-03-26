@@ -1,0 +1,138 @@
+#!/usr/bin/make -f
+# Copyright (C) 2002-2005 Flavio Stanchina
+# Copyright (C) 2005-2006 Aric Cyr
+# Copyright (C) 2007-2010 Mario Limonciello
+# Copyright (C) 2009-2011 Canonical Ltd.
+# Copyright (C) 2012 Linaro Ltd.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Package names
+PKG_driver	:= pvr-omap4
+PKG_driver_dev	:= pvr-omap4-dev
+PKG_driver_dbg	:= pvr-omap4-dbg
+PKG_module	:= $(shell echo "$(PKG_driver)" | sed s/\-/_/g)
+PKG_version	:= $(shell dpkg-parsechangelog | awk -F' ' '/^Version:/ {print $$2}' | awk -F- '{print $$1}')
+PKG_source	:= $(shell dpkg-parsechangelog | sed -n 's/^Source: //p')
+PKG_module	:= $(shell echo "$(PKG_driver)" | sed s/\-/_/g)
+
+VIDEODEP = $(shell cat /usr/share/xserver-xorg/videodrvdep 2>/dev/null)
+VIDDRIVER_PROVIDES = xorg-driver-video
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+# Priority of the alternatives
+alt_priority	:= 1000
+
+# Directory naming schemes
+PKG_dirname		:= $(PKG_driver)-egl
+bindir			:= usr/bin
+datadir			:= usr/share
+PKG_datadir		:= $(datadir)/$(PKG_dirname)
+libdir			:= usr/lib
+dlibdir			:= usr/lib/debug
+includedir		:= usr/include
+sysconfdir		:= etc
+PKG_libdir		:= $(libdir)/$(PKG_dirname)
+PKG_dlibdir		:= $(dlibdir)/$(PKG_libdir)
+xorg_libdir		:= $(libdir)/xorg
+PKG_driversdir		:= $(PKG_libdir)/xorg
+PKG_bindir		:= $(PKG_libdir)/bin
+PKG_configdir		:= $(PKG_libdir)
+PKG_includedir		:= $(PKG_libdir)/include
+ld_so_conf_dir		:= $(PKG_configdir)
+ld_so_conf_file		:= ld.so.conf
+alt_ld_so_conf_file	:= alt_ld.so.conf
+ld_so_conf_path		:= $(ld_so_conf_dir)/$(ld_so_conf_file)
+alt_ld_so_conf_path	:= $(ld_so_conf_dir)/$(alt_ld_so_conf_file)
+mandir			:= usr/share/man/man1
+PKG_bugdir		:= usr/share/bug/$(PKG_dirname)
+autostartdir		:= etc/xdg/autostart
+PKG_autostartdir	:= $(PKG_configdir)
+PKG_xmoddir		:= $(PKG_libdir)/xorg/modules
+
+# This makes sure that the xserver ABI is bumped to match the current one when the
+# packages are built
+.PHONY: serverabi
+serverabi:
+ifeq ($(VIDEODEP),)
+	@echo 'error: xserver-xorg-dev >= 1.7.6.901 needs to be installed'
+	@exit 1
+else
+	echo "xviddriver:Depends=$(VIDEODEP)" >> debian/$(PKG_driver).substvars
+endif
+
+build:
+	# Fill in important variables
+	for i in dkms.conf \
+			$(PKG_driver).dirs \
+			$(PKG_driver).install \
+			$(PKG_driver).postinst \
+			$(PKG_driver).postrm \
+			$(PKG_driver).prerm \
+			$(PKG_driver_dbg).dirs \
+			$(PKG_driver_dbg).install \
+			$(PKG_driver_dev).dirs \
+			$(PKG_driver_dev).install; do \
+		sed -e "s|#PKGXMODDIR#|$(PKG_xmoddir)|g" \
+                        -e "s|#LIBDIR#|$(libdir)|g" \
+                        -e "s|#BINDIR#|$(bindir)|g" \
+                        -e "s|#SYSCONFDIR#|$(sysconfdir)|g" \
+                        -e "s|#MANDIR#|$(mandir)|g" \
+                        -e "s|#LDSOCONF#|$(ld_so_conf_path)|g" \
+                        -e "s|#ALTLDSOCONF#|$(alt_ld_so_conf_path)|g" \
+                        -e "s|#ALTPRIORITY#|$(alt_priority)|g" \
+                        -e "s|#AUTOSTARTDIR#|$(autostartdir)|g" \
+                        -e "s|#DATADIR#|$(datadir)|g" \
+                        -e "s|#PKGDATADIR#|$(PKG_datadir)|g" \
+                        -e "s|#PKGCONFIGDIR#|$(PKG_configdir)|g" \
+                        -e "s|#PKGBINDIR#|$(PKG_bindir)|g" \
+                        -e "s|#PKGLIBDIR#|$(PKG_libdir)|g" \
+                        -e "s|#PKGDLIBDIR#|$(PKG_dlibdir)|g" \
+                        -e "s|#PKGDRIVERSDIR#|$(PKG_driversdir)|g" \
+                        -e "s|#DRIVERNAME#|$(PKG_driver)|g" \
+                        -e "s|#DRIVERDEVNAME#|$(PKG_driver_dev)|g" \
+                        -e "s|#DRIVERSRCNAME#|$(PKG_source)|g" \
+                        -e "s|#VERSION#|$(PKG_version)|g"   \
+                        -e "s|#INCLUDEDIR#|$(includedir)|g" \
+                        -e "s|#PKGINCLUDEDIR#|$(PKG_includedir)|g" \
+                        -e "s|#PKGXMODDIR#|$(PKG_xmoddir)|g" \
+                        -e "s|#SRCARCH#|$(SRC_arch)|g" \
+                        -e "s|#DEB_HOST_MULTIARCH#|$(DEB_HOST_MULTIARCH)|g" \
+                        debian/$$i.in > debian/$$i;      \
+        done
+
+	# file permission are a mess from orig tarball, fixing it
+	find sgx -type f -exec chmod -x {} +
+	chmod +x sgx/eurasiacon/build/linux2/tools/cc-check.sh
+
+	# remove rpath from the binaries and libraries
+	find usr/bin -type f -exec chrpath -d {} +
+	find usr/lib -maxdepth 1 -iname "*.so*" -type f -exec chrpath -d {} +
+	chrpath -d usr/lib/xorg/modules/drivers/pvr_drv.so
+
+	dh build
+
+binary-arch:
+	dh_installdirs -p$(PKG_driver)
+	dh_installdirs -p$(PKG_driver_dbg)
+	dh_installdirs -p$(PKG_driver_dev)
+
+	# ld.so.conf
+	echo "/$(PKG_libdir)" > "$(CURDIR)/debian/$(PKG_driver)/$(ld_so_conf_path)"
+
+	# empty ld.so.conf for the fake multi-arch alternative
+	echo "" > "$(CURDIR)/debian/$(PKG_driver)/$(alt_ld_so_conf_path)"
+
+	dh binary-arch
+
+binary: binary-arch binary-indep;
+	# Run the normal stuff
+	dh binary
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l$(CURDIR)/debian/$(PKG_driver)/$(PKG_libdir)
+
+%:
+	dh $@

@@ -1,0 +1,39 @@
+Source: pvr-omap4
+Section: restricted/misc
+Priority: extra
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Build-Depends: debhelper (>= 7.0.50~),
+               chrpath,
+               libxext6,
+               libxfixes3 (>= 1:4.0.1),
+               xserver-xorg-dev (>= 2:1.11.0)
+Standards-Version: 3.9.3
+Homepage: https://launchpad.net/~tiomap-dev/+archive/release
+
+Package: pvr-omap4
+Architecture: armhf
+Depends: dkms (>= 1.95), make, coreutils (>= 8.5),
+         grep (>= 2.6.3), dos2unix, linux-headers-omap4,
+         ${xviddriver:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Description: PowerVR SGX540 libraries for OMAP4, libs and drivers.
+ PowerVR SGX540 Linux libraries for OMAP4.
+ .
+ This package provides 2D display drivers and hardware accelerated OpenGL-ES.
+
+Package: pvr-omap4-dbg
+Section: restricted/debug
+Architecture: armhf
+Depends: pvr-omap4 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: PowerVR SGX540 libraries for OMAP4, debugging symbols
+ PowerVR SGX540 Linux libraries for OMAP4.
+ .
+ This package provides the 2D display drivers and hardware accelerated
+ OpenGL-ES debugging symbols files.
+
+Package: pvr-omap4-dev
+Architecture: armhf
+Depends: pvr-omap4 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: PowerVR SGX540 libraries for OMAP4, development files
+ PowerVR SGX540 Linux libraries for OMAP4.
+ .
+ This package provides definitions for the EGL and GLES extensions.

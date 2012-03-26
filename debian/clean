@@ -1,0 +1,10 @@
+debian/dkms.conf
+debian/pvr-omap4.dirs
+debian/pvr-omap4.install
+debian/pvr-omap4.postinst
+debian/pvr-omap4.postrm
+debian/pvr-omap4.prerm
+debian/pvr-omap4-dbg.dirs
+debian/pvr-omap4-dbg.install
+debian/pvr-omap4-dev.dirs
+debian/pvr-omap4-dev.install

@@ -1,0 +1,19 @@
+# Kernel module
+sgx/eurasiacon		usr/src/#DRIVERNAME#-#VERSION#
+sgx/include4		usr/src/#DRIVERNAME#-#VERSION#
+sgx/services4		usr/src/#DRIVERNAME#-#VERSION#
+sgx/tools		usr/src/#DRIVERNAME#-#VERSION#
+sgx/INSTALL		usr/src/#DRIVERNAME#-#VERSION#
+sgx/README		usr/src/#DRIVERNAME#-#VERSION#
+debian/Makefile		usr/src/#DRIVERNAME#-#VERSION#
+debian/dkms.conf	usr/src/#DRIVERNAME#-#VERSION#
+debian/dkms/*		usr/src/#DRIVERNAME#-#VERSION#
+
+# Binaries
+usr/bin/*		#PKGBINDIR#
+
+# Libraries
+usr/lib/lib*.so*	#PKGLIBDIR#
+
+# Xorg Driver
+usr/lib/xorg		#PKGLIBDIR#
