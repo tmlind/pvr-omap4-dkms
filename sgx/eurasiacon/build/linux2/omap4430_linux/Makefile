@@ -59,8 +59,8 @@ LDM_PLATFORM ?= 1
 
 ifeq ($(LDM_PLATFORM),1)
 SUPPORT_LINUX_USING_WORKQUEUES := 1
-DISPLAY_CONTROLLER_COMPONENT += dc_omapdrm_linux
-DISPLAY_CONTROLLER := omaplfb
+#DISPLAY_CONTROLLER_COMPONENT += dc_omapdrm_linux
+#DISPLAY_CONTROLLER := omaplfb
 else
 SUPPORT_LINUX_USING_SHARED_WORKQUEUES := 1
 OMAP_NON_FLIP_DISPLAY := 1
@@ -86,7 +86,7 @@ ifeq ($(SUPPORT_OMAP4430_NEON),1)
 SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
 endif
 
-PVR_NO_FULL_CACHE_OPS := 0
+PVR_NO_FULL_CACHE_OPS := 1
 
 LIBGCC := $(shell $(CROSS_COMPILE)gcc -print-libgcc-file-name)
 

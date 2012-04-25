@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-#if !defined(LINUX)
+#if (!defined(LINUX) && !defined(__QNXNTO__))
 #include <ntddk.h>
 #include <windef.h>
 #endif

@@ -179,6 +179,8 @@ SGXDoKickBW(IMG_UINT32 ui32BridgeID,
 	IMG_HANDLE *phKernelSyncInfoHandles = IMG_NULL;
 #endif
 
+	OSWriteMemoryBarrier();
+
 	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_SGX_DOKICK);
 
 	psRetOUT->eError =
@@ -778,6 +780,90 @@ SGXSubmitTransferBW(IMG_UINT32 ui32BridgeID,
 #endif
 
 	return 0;
+}
+
+static IMG_INT
+SGXSetTransferContextPriorityBW(IMG_UINT32 ui32BridgeID,
+                        PVRSRV_BRIDGE_IN_SGX_SET_TRANSFER_CONTEXT_PRIORITY *psSGXSetTransferContextPriorityIN,
+                        PVRSRV_BRIDGE_RETURN *psRetOUT,
+                        PVRSRV_PER_PROCESS_DATA *psPerProc)
+{
+	IMG_HANDLE hDevCookieInt;
+    IMG_HANDLE hTransferContextInt;
+
+	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_SGX_SET_TRANSFER_CONTEXT_PRIORITY);
+
+	psRetOUT->eError =
+		PVRSRVLookupHandle(psPerProc->psHandleBase,
+						   &hDevCookieInt,
+						   psSGXSetTransferContextPriorityIN->hDevCookie,
+						   PVRSRV_HANDLE_TYPE_DEV_NODE);
+
+	if(psRetOUT->eError != PVRSRV_OK)
+	{
+		return 0;
+	}
+
+	psRetOUT->eError =
+		PVRSRVLookupHandle(psPerProc->psHandleBase,
+						   &hTransferContextInt,
+						   psSGXSetTransferContextPriorityIN->hHWTransferContext,
+						   PVRSRV_HANDLE_TYPE_SGX_HW_TRANSFER_CONTEXT);
+
+	if(psRetOUT->eError != PVRSRV_OK)
+	{
+		return 0;
+	}
+
+    psRetOUT->eError = SGXSetTransferContextPriorityKM(
+            hDevCookieInt, 
+            hTransferContextInt,
+            psSGXSetTransferContextPriorityIN->ui32Priority,
+            psSGXSetTransferContextPriorityIN->ui32OffsetOfPriorityField);
+
+    return 0;
+}
+
+static IMG_INT
+SGXSetRenderContextPriorityBW(IMG_UINT32 ui32BridgeID,
+                        PVRSRV_BRIDGE_IN_SGX_SET_RENDER_CONTEXT_PRIORITY *psSGXSetRenderContextPriorityIN,
+                        PVRSRV_BRIDGE_RETURN *psRetOUT,
+                        PVRSRV_PER_PROCESS_DATA *psPerProc)
+{
+	IMG_HANDLE hDevCookieInt;
+    IMG_HANDLE hRenderContextInt;
+
+	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_SGX_SET_RENDER_CONTEXT_PRIORITY);
+
+	psRetOUT->eError =
+		PVRSRVLookupHandle(psPerProc->psHandleBase,
+						   &hDevCookieInt,
+						   psSGXSetRenderContextPriorityIN->hDevCookie,
+						   PVRSRV_HANDLE_TYPE_DEV_NODE);
+
+	if(psRetOUT->eError != PVRSRV_OK)
+	{
+		return 0;
+	}
+
+	psRetOUT->eError =
+		PVRSRVLookupHandle(psPerProc->psHandleBase,
+						   &hRenderContextInt,
+						   psSGXSetRenderContextPriorityIN->hHWRenderContext,
+						   PVRSRV_HANDLE_TYPE_SGX_HW_RENDER_CONTEXT);
+
+	if(psRetOUT->eError != PVRSRV_OK)
+	{
+		return 0;
+	}
+
+    psRetOUT->eError = SGXSetRenderContextPriorityKM(
+            hDevCookieInt, 
+            hRenderContextInt,
+            psSGXSetRenderContextPriorityIN->ui32Priority,
+            psSGXSetRenderContextPriorityIN->ui32OffsetOfPriorityField);
+
+    return 0;
 }
 
 
@@ -2176,8 +2262,12 @@ SGXRegisterHWRenderContextBW(IMG_UINT32 ui32BridgeID,
 
 	hHWRenderContextInt =
 		SGXRegisterHWRenderContextKM(hDevCookieInt,
-									 &psSGXRegHWRenderContextIN->sHWRenderContextDevVAddr,
-									 psPerProc);
+                                     psSGXRegHWRenderContextIN->pHWRenderContextCpuVAddr,
+                                     psSGXRegHWRenderContextIN->ui32HWRenderContextSize,
+                                     psSGXRegHWRenderContextIN->ui32OffsetToPDDevPAddr,
+                                     psSGXRegHWRenderContextIN->hDevMemContext,
+                                     &psSGXRegHWRenderContextOUT->sHWRenderContextDevVAddr,
+                                     psPerProc);
 
 	if (hHWRenderContextInt == IMG_NULL)
 	{
@@ -2258,7 +2348,11 @@ SGXRegisterHWTransferContextBW(IMG_UINT32 ui32BridgeID,
 
 	hHWTransferContextInt =
 		SGXRegisterHWTransferContextKM(hDevCookieInt,
-									   &psSGXRegHWTransferContextIN->sHWTransferContextDevVAddr,
+									   psSGXRegHWTransferContextIN->pHWTransferContextCpuVAddr,
+                                       psSGXRegHWTransferContextIN->ui32HWTransferContextSize,
+                                       psSGXRegHWTransferContextIN->ui32OffsetToPDDevPAddr,
+                                       psSGXRegHWTransferContextIN->hDevMemContext,
+                                       &psSGXRegHWTransferContextOUT->sHWTransferContextDevVAddr,
 									   psPerProc);
 
 	if (hHWTransferContextInt == IMG_NULL)
@@ -2345,7 +2439,11 @@ SGXRegisterHW2DContextBW(IMG_UINT32 ui32BridgeID,
 
 	hHW2DContextInt =
 		SGXRegisterHW2DContextKM(hDevCookieInt,
-								 &psSGXRegHW2DContextIN->sHW2DContextDevVAddr,
+								 psSGXRegHW2DContextIN->pHW2DContextCpuVAddr,
+                                 psSGXRegHW2DContextIN->ui32HW2DContextSize,
+                                 psSGXRegHW2DContextIN->ui32OffsetToPDDevPAddr,
+								 psSGXRegHW2DContextIN->hDevMemContext,
+                                 &psSGXRegHW2DContextOUT->sHW2DContextDevVAddr,
 								 psPerProc);
 
 	if (hHW2DContextInt == IMG_NULL)
@@ -3091,6 +3189,12 @@ SGXPDumpBufferArrayBW(IMG_UINT32 ui32BridgeID,
 		ui32BufferArrayLength * sizeof(SGX_KICKTA_DUMP_BUFFER);
 	PVRSRV_ERROR eError = PVRSRV_ERROR_TOO_FEW_BUFFERS;
 
+#if defined (__QNXNTO__)
+    const IMG_UINT32 MAX_BUFFER_NAME_SIZE = 30;
+    IMG_PCHAR pszNamesBuffer, pszName;
+    IMG_UINT32 ui32NameBufferArraySize;
+#endif
+
 	PVR_UNREFERENCED_PARAMETER(psBridgeOut);
 
 	PVRSRV_BRIDGE_ASSERT_CMD(ui32BridgeID, PVRSRV_BRIDGE_SGX_PDUMP_BUFFER_ARRAY);
@@ -3121,6 +3225,35 @@ SGXPDumpBufferArrayBW(IMG_UINT32 ui32BridgeID,
 		
 		return -EFAULT;
 	}
+#endif
+
+#if defined (__QNXNTO__)
+    ui32NameBufferArraySize = ui32BufferArrayLength * MAX_BUFFER_NAME_SIZE;
+    if (OSAllocMem(PVRSRV_OS_PAGEABLE_HEAP, ui32NameBufferArraySize,
+            (IMG_PVOID *)&pszNamesBuffer, 0,
+            "Kick Tile Accelerator Dump Buffer names") != PVRSRV_OK)
+    {
+        OSFreeMem(PVRSRV_OS_PAGEABLE_HEAP, ui32BufferArraySize, psKickTADumpBuffer, 0);
+        return -ENOMEM;
+    }
+
+    pszName = pszNamesBuffer;
+    for (i=0; i<ui32BufferArrayLength; i++)
+    {
+        if (CopyFromUserWrapper(psPerProc, ui32BridgeID, 
+                pszName, psKickTADumpBuffer[i].pszName,
+                MAX_BUFFER_NAME_SIZE) != PVRSRV_OK)
+        {
+            PVR_DPF((PVR_DBG_WARNING, "Failed to read pdump buffer name"));
+            psKickTADumpBuffer[i].pszName = 0;
+        }
+        else 
+        {
+            pszName[MAX_BUFFER_NAME_SIZE-1] = 0;
+            psKickTADumpBuffer[i].pszName = pszName;
+        }
+        pszName += MAX_BUFFER_NAME_SIZE;
+    }
 #endif
 
 	for(i = 0; i < ui32BufferArrayLength; i++)
@@ -3208,6 +3341,10 @@ SGXPDumpBufferArrayBW(IMG_UINT32 ui32BridgeID,
 	OSFreeMem(PVRSRV_OS_PAGEABLE_HEAP, ui32BufferArraySize, psKickTADumpBuffer, 0);
 #endif
 	
+
+#if defined (__QNXNTO__)
+	OSFreeMem(PVRSRV_OS_PAGEABLE_HEAP, ui32NameBufferArraySize, pszNamesBuffer, 0);
+#endif
 
 	return 0;
 }
@@ -3627,8 +3764,6 @@ IMG_VOID SetSGXDispatchTableEntry(IMG_VOID)
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_2DQUERYBLTSCOMPLETE, SGX2DQueryBlitsCompleteBW);
 
-	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_GETMMUPDADDR, DummyBW);
-
 #if defined(TRANSFER_QUEUE)
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SUBMITTRANSFER, SGXSubmitTransferBW);
 #endif
@@ -3653,6 +3788,8 @@ IMG_VOID SetSGXDispatchTableEntry(IMG_VOID)
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SCHEDULE_PROCESS_QUEUES, SGXScheduleProcessQueuesBW);
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_READ_HWPERF_CB, SGXReadHWPerfCBBW);
+    SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SET_RENDER_CONTEXT_PRIORITY, SGXSetRenderContextPriorityBW);
+    SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_SET_TRANSFER_CONTEXT_PRIORITY, SGXSetTransferContextPriorityBW);
 
 #if defined(PDUMP)
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SGX_PDUMP_BUFFER_ARRAY, SGXPDumpBufferArrayBW);

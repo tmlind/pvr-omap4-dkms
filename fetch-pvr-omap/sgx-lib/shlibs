@@ -1,4 +1,4 @@
-libGLESv2 2 sgx-lib
-libGLESv1_CM 1 sgx-lib
 libEGL 1 sgx-lib
+libGLESv2 2 sgx-lib
 libOpenVG 1 sgx-lib
+libGLESv1_CM 1 sgx-lib

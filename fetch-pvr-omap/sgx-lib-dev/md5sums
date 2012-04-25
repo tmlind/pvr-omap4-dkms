@@ -14,5 +14,5 @@ c55edf0b8437bd024d73b333430ff4c1  usr/lib/pkgconfig/egl.pc
 4805ddb8cd48e49e2ebe0644eb5cef92  usr/lib/pkgconfig/glesv1_cm.pc
 4204e526e5f0f24ef1da9b3a224db869  usr/lib/pkgconfig/glesv2.pc
 186f92f5ffc0a088f42c6993214f27ff  usr/lib/pkgconfig/vg.pc
-b1f253473724076ea593dd04433ad0d3  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
+9f363eab52c5763af2ce695e454aea8b  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
 542af8025bb26f9b36a120c00e319748  usr/share/doc/sgx-lib-dev/copyright

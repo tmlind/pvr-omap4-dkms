@@ -155,25 +155,14 @@ static IMG_VOID PVRSRVEnumerateDCKM_ForEachVaCb(PVRSRV_DEVICE_NODE *psDeviceNode
 	IMG_UINT *pui32DevCount;
 	IMG_UINT32 **ppui32DevID;
 	PVRSRV_DEVICE_CLASS peDeviceClass;
-	IMG_VOID *handle;
 
 	pui32DevCount = va_arg(va, IMG_UINT*);
 	ppui32DevID = va_arg(va, IMG_UINT32**);
 	peDeviceClass = va_arg(va, PVRSRV_DEVICE_CLASS);
-	handle = va_arg(va, IMG_VOID*);
 
 	if	((psDeviceNode->sDevId.eDeviceClass == peDeviceClass)
 	&&	(psDeviceNode->sDevId.eDeviceType == PVRSRV_DEVICE_TYPE_EXT))
 	{
-		if (psDeviceNode->handle && psDeviceNode->handle != handle)
-		{
-			/* this device node is restricted visibility to certain
-			 * handles, but does not match the current handle, so
-			 * it is hidden from the results
-			 */
-			return;
-		}
-
 		(*pui32DevCount)++;
 		if(*ppui32DevID)
 		{
@@ -186,8 +175,7 @@ static IMG_VOID PVRSRVEnumerateDCKM_ForEachVaCb(PVRSRV_DEVICE_NODE *psDeviceNode
 IMG_EXPORT
 PVRSRV_ERROR PVRSRVEnumerateDCKM (PVRSRV_DEVICE_CLASS DeviceClass,
 								  IMG_UINT32 *pui32DevCount,
-								  IMG_UINT32 *pui32DevID,
-								  IMG_VOID *handle)
+								  IMG_UINT32 *pui32DevID )
 {
 	
 	IMG_UINT			ui32DevCount = 0;
@@ -200,8 +188,7 @@ PVRSRV_ERROR PVRSRVEnumerateDCKM (PVRSRV_DEVICE_CLASS DeviceClass,
 										&PVRSRVEnumerateDCKM_ForEachVaCb,
 										&ui32DevCount,
 										&pui32DevID,
-										DeviceClass,
-										handle);
+										DeviceClass);
 
 	if(pui32DevCount)
 	{
@@ -219,8 +206,7 @@ PVRSRV_ERROR PVRSRVEnumerateDCKM (PVRSRV_DEVICE_CLASS DeviceClass,
 
 static
 PVRSRV_ERROR PVRSRVRegisterDCDeviceKM (PVRSRV_DC_SRV2DISP_KMJTABLE *psFuncTable,
-									   IMG_UINT32 *pui32DeviceID,
-									   IMG_VOID *handle)
+									   IMG_UINT32 *pui32DeviceID)
 {
 	PVRSRV_DISPLAYCLASS_INFO 	*psDCInfo = IMG_NULL;
 	PVRSRV_DEVICE_NODE			*psDeviceNode;
@@ -288,7 +274,7 @@ PVRSRV_ERROR PVRSRVRegisterDCDeviceKM (PVRSRV_DC_SRV2DISP_KMJTABLE *psFuncTable,
 	psDeviceNode->sDevId.eDeviceType = PVRSRV_DEVICE_TYPE_EXT;
 	psDeviceNode->sDevId.eDeviceClass = PVRSRV_DEVICE_CLASS_DISPLAY;
 	psDeviceNode->psSysData = psSysData;
-	psDeviceNode->handle = handle;
+
 	
 	if (AllocateDeviceID(psSysData, &psDeviceNode->sDevId.ui32DeviceIndex) != PVRSRV_OK)
 	{
@@ -451,7 +437,6 @@ PVRSRV_ERROR PVRSRVRegisterBCDeviceKM (PVRSRV_BC_SRV2BUFFER_KMJTABLE *psFuncTabl
 	psDeviceNode->sDevId.eDeviceType = PVRSRV_DEVICE_TYPE_EXT;
 	psDeviceNode->sDevId.eDeviceClass = PVRSRV_DEVICE_CLASS_BUFFER;
 	psDeviceNode->psSysData = psSysData;
-	psDeviceNode->handle = NULL;
 
 	
 	if (AllocateDeviceID(psSysData, &psDeviceNode->sDevId.ui32DeviceIndex) != PVRSRV_OK)

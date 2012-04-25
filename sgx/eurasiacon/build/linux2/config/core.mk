@@ -368,7 +368,9 @@ $(eval $(call TunableBothConfigC,USE_SGX_CORE_REV_HEAD,))
 $(eval $(call BothConfigC,TRANSFER_QUEUE,))
 $(eval $(call BothConfigC,PVR_SECURE_HANDLES,))
 
+ifdef DISPLAY_CONTROLLER
 $(eval $(call KernelConfigC,DISPLAY_CONTROLLER,$(DISPLAY_CONTROLLER)))
+endif
 
 $(eval $(call TunableKernelConfigC,FLIP_TECHNIQUE_FRAMEBUFFER,))
 $(eval $(call TunableKernelConfigC,FLIP_TECHNIQUE_OVERLAY,))

@@ -41,6 +41,10 @@
 
 #include "lists.h"
 
+#ifdef SUPPORT_DRI_DRM_EXTERNAL
+#  include <linux/omap_drv.h>
+#endif
+
 IMG_UINT32	g_ui32InitFlags;
 
 #define		INIT_DATA_ENABLE_PDUMPINIT	0x1U
@@ -487,7 +491,9 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful)
 
 
 
+#if !defined(__QNXNTO__)
 	PDUMPENDINITPHASE();
+#endif
 
 	return PVRSRV_OK;
 }
@@ -1361,6 +1367,11 @@ static IMG_VOID PVRSRVMISR_ForEachCb(PVRSRV_DEVICE_NODE *psDeviceNode)
 IMG_VOID IMG_CALLCONV PVRSRVMISR(IMG_VOID *pvSysData)
 {
 	SYS_DATA			*psSysData = pvSysData;
+
+#ifdef SUPPORT_DRI_DRM_EXTERNAL
+	omap_gem_op_update();
+#endif
+
 	if(!psSysData)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRSRVMISR: Invalid params\n"));

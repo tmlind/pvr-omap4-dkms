@@ -35,6 +35,7 @@
 #include "private_data.h"
 #include "linkage.h"
 #include "pvr_bridge_km.h"
+#include "pvr_uaccess.h"
 
 #if defined(SUPPORT_DRI_DRM)
 #include <drm/drmP.h>
@@ -53,12 +54,6 @@
 #endif
 
 #include "bridged_pvr_bridge.h"
-
-#if defined(SUPPORT_DRI_DRM)
-#define	PRIVATE_DATA(pFile) ((pFile)->driver_priv)
-#else
-#define	PRIVATE_DATA(pFile) ((pFile)->private_data)
-#endif
 
 #if defined(DEBUG_BRIDGE_KM)
 
@@ -192,10 +187,6 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 #if !defined(SUPPORT_DRI_DRM)
 	PVRSRV_BRIDGE_PACKAGE *psBridgePackageUM = (PVRSRV_BRIDGE_PACKAGE *)arg;
 	PVRSRV_BRIDGE_PACKAGE sBridgePackageKM;
-	IMG_VOID *handle = NULL;
-#else
-	IMG_VOID * omap_drm_get_default_fb(struct drm_device *dev);
-	IMG_VOID *handle = omap_drm_get_default_fb(dev); // XXX handle should come from omaplfb somehow, because it is omaplfb that decided to use the fb_info* as the unique handle..
 #endif
 	PVRSRV_BRIDGE_PACKAGE *psBridgePackageKM;
 	IMG_UINT32 ui32PID = OSGetCurrentProcessIDKM();
@@ -274,7 +265,7 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 	{
 		case PVRSRV_BRIDGE_EXPORT_DEVICEMEM_2:
 		{
-			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
+			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = get_private(pFile);
 
 			if(psPrivateData->hKernelMemInfo)
 			{
@@ -290,7 +281,7 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 		{
 			PVRSRV_BRIDGE_IN_MAP_DEV_MEMORY *psMapDevMemIN =
 				(PVRSRV_BRIDGE_IN_MAP_DEV_MEMORY *)psBridgePackageKM->pvParamIn;
-			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
+			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = get_private(pFile);
 
 			if(!psPrivateData->hKernelMemInfo)
 			{
@@ -300,13 +291,17 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 				goto unlock_and_return;
 			}
 
-			psMapDevMemIN->hKernelMemInfo = psPrivateData->hKernelMemInfo;
+			if (pvr_put_user(psPrivateData->hKernelMemInfo, &psMapDevMemIN->hKernelMemInfo) != 0)
+			{
+				err = -EFAULT;
+				goto unlock_and_return;
+			}
 			break;
 		}
 
 		default:
 		{
-			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
+			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = get_private(pFile);
 
 			if(psPrivateData->hKernelMemInfo)
 			{
@@ -369,7 +364,16 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 	}
 #endif 
 
-	err = BridgedDispatchKM(psPerProc, psBridgePackageKM, handle);
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+	{
+	PVRSRV_ENV_PER_PROCESS_DATA *psEnvPerProc =
+			(PVRSRV_ENV_PER_PROCESS_DATA *)PVRSRVProcessPrivateData(psPerProc);
+	psEnvPerProc->dev = dev;
+	psEnvPerProc->file = pFile;
+	}
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
+	err = BridgedDispatchKM(psPerProc, psBridgePackageKM);
 	if(err != PVRSRV_OK)
 		goto unlock_and_return;
 
@@ -379,11 +383,21 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 		{
 			PVRSRV_BRIDGE_OUT_EXPORTDEVICEMEM *psExportDeviceMemOUT =
 				(PVRSRV_BRIDGE_OUT_EXPORTDEVICEMEM *)psBridgePackageKM->pvParamOut;
-			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
+			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = get_private(pFile);
 
-			psPrivateData->hKernelMemInfo = psExportDeviceMemOUT->hMemInfo;
+			if (pvr_get_user(psPrivateData->hKernelMemInfo, &psExportDeviceMemOUT->hMemInfo) != 0)
+			{
+				err = -EFAULT;
+				goto unlock_and_return;
+			}
 #if defined(SUPPORT_MEMINFO_IDS)
-			psExportDeviceMemOUT->ui64Stamp = psPrivateData->ui64Stamp = ++ui64Stamp;
+			psPrivateData->ui64Stamp = ++ui64Stamp;
+
+			if (pvr_put_user(psPrivateData->ui64Stamp, &psExportDeviceMemOUT->ui64Stamp) != 0)
+			{
+				err = -EFAULT;
+				goto unlock_and_return;
+			}
 #endif
 			break;
 		}
@@ -393,8 +407,12 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 		{
 			PVRSRV_BRIDGE_OUT_MAP_DEV_MEMORY *psMapDeviceMemoryOUT =
 				(PVRSRV_BRIDGE_OUT_MAP_DEV_MEMORY *)psBridgePackageKM->pvParamOut;
-			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = PRIVATE_DATA(pFile);
-			psMapDeviceMemoryOUT->sDstClientMemInfo.ui64Stamp =	psPrivateData->ui64Stamp;
+			PVRSRV_FILE_PRIVATE_DATA *psPrivateData = get_private(pFile);
+			if (pvr_put_user(psPrivateData->ui64Stamp, &psMapDeviceMemoryOUT->sDstClientMemInfo.ui64Stamp) != 0)
+			{
+				err = -EFAULT;
+				goto unlock_and_return;
+			}
 			break;
 		}
 
@@ -402,7 +420,11 @@ PVRSRV_BridgeDispatchKM(struct file *pFile, unsigned int unref__ ioctlCmd, unsig
 		{
 			PVRSRV_BRIDGE_OUT_MAP_DEVICECLASS_MEMORY *psDeviceClassMemoryOUT =
 				(PVRSRV_BRIDGE_OUT_MAP_DEVICECLASS_MEMORY *)psBridgePackageKM->pvParamOut;
-			psDeviceClassMemoryOUT->sClientMemInfo.ui64Stamp = ++ui64Stamp;
+			if (pvr_put_user(++ui64Stamp, &psDeviceClassMemoryOUT->sClientMemInfo.ui64Stamp) != 0)
+			{
+				err = -EFAULT;
+				goto unlock_and_return;
+			}
 			break;
 		}
 #endif 

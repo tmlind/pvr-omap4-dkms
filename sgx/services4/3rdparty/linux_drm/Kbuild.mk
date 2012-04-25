@@ -29,6 +29,8 @@ DRM_SOURCE_DIR := drivers/gpu/drm
 
 ccflags-y += \
 	 -I$(KERNELDIR)/include/drm \
+	 -I$(KERNELDIR)/drivers/staging/drm \
+	 -I$(KERNELDIR)/include/linux \
 	 -I$(DRM_SOURCE_DIR)
 
 drm-y += \

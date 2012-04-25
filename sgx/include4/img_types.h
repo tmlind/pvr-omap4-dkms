@@ -62,7 +62,7 @@ typedef unsigned __int64	IMG_UINT64, *IMG_PUINT64;
 typedef __int64				IMG_INT64,  *IMG_PINT64;
 
 #else
-	#if (defined(LINUX) || defined(__METAG))
+	#if ((defined(LINUX) || defined(__METAG)) || defined(__QNXNTO__))
 		typedef unsigned long long		IMG_UINT64,	*IMG_PUINT64;
 		typedef long long 				IMG_INT64,	*IMG_PINT64;
 	#else

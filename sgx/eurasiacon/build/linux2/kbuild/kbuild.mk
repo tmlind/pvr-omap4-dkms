@@ -69,7 +69,7 @@ kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
 		V=$(V) W=$(W) \
 		TOP=$(TOP) clean
 
-kbuild_install: $(TARGET_OUT)/kbuild/Makefile
+kbuild_install: kbuild $(TARGET_OUT)/kbuild/Makefile
 	@: $(if $(strip $(DISCIMAGE)),,$(error $$(DISCIMAGE) was empty or unset while trying to use it to set INSTALL_MOD_PATH for modules_install))
 	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \

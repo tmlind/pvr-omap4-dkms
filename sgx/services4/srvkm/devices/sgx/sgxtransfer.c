@@ -150,7 +150,7 @@ IMG_EXPORT PVRSRV_ERROR SGXSubmitTransferKM(IMG_HANDLE hDevHandle, PVRSRV_TRANSF
 
 				if (psSyncInfo->sWriteOpsCompleteDevVAddr.uiAddr == psMySyncInfo->sWriteOpsCompleteDevVAddr.uiAddr)
 				{
-					PVR_DPF((PVR_DBG_WARNING, "SGXSubmitTransferKM : Same src synchronized multiple times!"));
+					PVR_DPF((PVR_DBG_MESSAGE, "SGXSubmitTransferKM : Same src synchronized multiple times!"));
 					uiSrcSyncEnable &= ~(1 << loop);
 					break;
 				}
@@ -179,7 +179,7 @@ IMG_EXPORT PVRSRV_ERROR SGXSubmitTransferKM(IMG_HANDLE hDevHandle, PVRSRV_TRANSF
 
 				if (psSyncInfo->sWriteOpsCompleteDevVAddr.uiAddr == psMySyncInfo->sWriteOpsCompleteDevVAddr.uiAddr)
 				{
-					PVR_DPF((PVR_DBG_WARNING, "SGXSubmitTransferKM : Same dst synchronized multiple times!"));
+					PVR_DPF((PVR_DBG_MESSAGE, "SGXSubmitTransferKM : Same dst synchronized multiple times!"));
 					uiDstSyncEnable &= ~(1 << loop);
 					break;
 				}
@@ -348,7 +348,37 @@ IMG_EXPORT PVRSRV_ERROR SGXSubmitTransferKM(IMG_HANDLE hDevHandle, PVRSRV_TRANSF
 				}
 			}
 		}
-	}		
+
+		if (psKick->hTASyncInfo != IMG_NULL)
+		{
+			psSyncInfo = psKick->hTASyncInfo;
+
+			PDUMPCOMMENT("Tweak TA/TQ surface write op in transfer cmd\r\n");
+			PDUMPMEM(&psSyncInfo->psSyncData->ui32LastOpDumpVal,
+					psCCBMemInfo,
+					psKick->ui32CCBDumpWOff + (IMG_UINT32)(offsetof(SGXMKIF_TRANSFERCMD_SHARED, ui32TASyncWriteOpsPendingVal)),
+					sizeof(psSyncInfo->psSyncData->ui32LastOpDumpVal),
+					psKick->ui32PDumpFlags,
+					MAKEUNIQUETAG(psCCBMemInfo));
+
+			psSyncInfo->psSyncData->ui32LastOpDumpVal++;
+		}
+
+		if (psKick->h3DSyncInfo != IMG_NULL)
+		{
+			psSyncInfo = psKick->h3DSyncInfo;
+
+			PDUMPCOMMENT("Tweak 3D/TQ surface write op in transfer cmd\r\n");
+			PDUMPMEM(&psSyncInfo->psSyncData->ui32LastOpDumpVal,
+					psCCBMemInfo,
+					psKick->ui32CCBDumpWOff + (IMG_UINT32)(offsetof(SGXMKIF_TRANSFERCMD_SHARED, ui323DSyncWriteOpsPendingVal)),
+					sizeof(psSyncInfo->psSyncData->ui32LastOpDumpVal),
+					psKick->ui32PDumpFlags,
+					MAKEUNIQUETAG(psCCBMemInfo));
+
+			psSyncInfo->psSyncData->ui32LastOpDumpVal++;
+		}
+	}
 #endif
 
 	sCommand.ui32Data[1] = psKick->sHWTransferContextDevVAddr.uiAddr;

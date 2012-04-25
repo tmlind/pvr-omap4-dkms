@@ -154,11 +154,6 @@ typedef IMG_INT (*BridgeWrapperFunction)(IMG_UINT32 ui32BridgeID,
 									 IMG_VOID *psBridgeIn,
 									 IMG_VOID *psBridgeOut,
 									 PVRSRV_PER_PROCESS_DATA *psPerProc);
-typedef IMG_INT (*BridgeWrapperFunction2)(IMG_UINT32 ui32BridgeID,
-									 IMG_VOID *psBridgeIn,
-									 IMG_VOID *psBridgeOut,
-									 PVRSRV_PER_PROCESS_DATA *psPerProc,
-									 IMG_VOID *handle);
 
 typedef struct _PVRSRV_BRIDGE_DISPATCH_TABLE_ENTRY
 {
@@ -227,8 +222,7 @@ extern PVRSRV_BRIDGE_GLOBAL_STATS g_BridgeGlobalStats;
 PVRSRV_ERROR CommonBridgeInit(IMG_VOID);
 
 IMG_INT BridgedDispatchKM(PVRSRV_PER_PROCESS_DATA * psPerProc,
-					  PVRSRV_BRIDGE_PACKAGE   * psBridgePackageKM,
-					  IMG_VOID *handle);
+					  PVRSRV_BRIDGE_PACKAGE   * psBridgePackageKM);
 
 #if defined (__cplusplus)
 }

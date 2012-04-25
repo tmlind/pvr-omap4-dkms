@@ -276,21 +276,6 @@ typedef struct _PVRSRV_DEVICE_NODE_
 	
 	IMG_UINT32				(*pfnMMUGetContextID)(IMG_HANDLE hDevMemContext);
 #endif
-
-	/* to restrict visibility of certain device nodes to certain userspace
-	 * facing character devices, this handle can be set.  If the handle is
-	 * not null, it is compared to the handle passed down from the ioctl
-	 * when the devices are enumerated, and if it does not match, then this
-	 * device is hidden.
-	 *
-	 * For a practical example, with omaplfb the handle is set to the fb_info
-	 * struct corresponding to the fbdev associated with the drm_device
-	 * instance.  So if the system is configured with two independent
-	 * display drivers (card0 and card1), then each display driver instance
-	 * will only see display-class devices associated with that driver
-	 * instance.
-	 */
-	IMG_VOID                                *handle;
 } PVRSRV_DEVICE_NODE;
 
 PVRSRV_ERROR IMG_CALLCONV PVRSRVRegisterDevice(PSYS_DATA psSysData,

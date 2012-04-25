@@ -1,0 +1,27 @@
+Package: xserver-xorg-video-omap-pvr-dbg
+Source: xf86-video-omap-pvr
+Version: 0.1.0-0ubuntu1
+Architecture: armhf
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 258
+Depends: xserver-xorg-video-omap-pvr (= 0.1.0-0ubuntu1)
+Section: debug
+Priority: extra
+Description: X.org graphics -- TI OMAP pvr display driver (debug symbols)
+ This driver for the X.org server provides debug symbols support for
+ OMAP3 and newer devices. Currently it relies on a closed-source submodule
+ for EXA acceleration on the following chipsets:
+  + OMAP3430
+  + OMAP3630
+  + OMAP4430
+  + OMAP4460
+ .
+ The driver depends on omapdrm driver in the kernel with
+ GEM support.
+ .
+ More information about X.org can be found at:
+  * <URL:http://www.X.org>
+  * <URL:http://xorg.freedesktop.org>
+  * <URL:http://lists.freedesktop.org/mailman/listinfo/xorg>
+ .
+ This package contains debug symbols for xserver-xorg-video-omap-pvr.

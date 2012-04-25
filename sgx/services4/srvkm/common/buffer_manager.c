@@ -1545,6 +1545,23 @@ BM_UnregisterSmart(BM_HANDLE hBuf, IMG_HANDLE hSmartCache)
 }
 
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+IMG_VOID
+BM_SetGEM(BM_HANDLE hBuf, IMG_HANDLE buf)
+{
+	BM_BUF *pBuf = (BM_BUF *)hBuf;
+	OSMemHandleSetGEM(pBuf->hOSMemHandle, buf);
+}
+
+IMG_HANDLE
+BM_GetGEM(BM_HANDLE hBuf)
+{
+	BM_BUF *pBuf = (BM_BUF *)hBuf;
+	return OSMemHandleGetGEM(pBuf->hOSMemHandle);
+}
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
+
 IMG_CPU_VIRTADDR
 BM_HandleToCpuVaddr (BM_HANDLE hBuf)
 {
@@ -2085,6 +2102,11 @@ PXProcShareDataNode BM_XProcAllocNewBuffer(void)
 	gXProcWorkaroundShareDataNode = pShareDataNode;
 
 	return pShareDataNode;
+}
+
+IMG_UINT32 BM_XProcWorkaroundGetRefCount(IMG_UINT32 ui32Index)
+{
+	return gXProcWorkaroundShareDataNode->ui32RefCount;
 }
 
 static PVRSRV_ERROR

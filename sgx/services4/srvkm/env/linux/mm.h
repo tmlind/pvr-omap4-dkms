@@ -149,6 +149,10 @@ struct _LinuxMemArea {
     struct list_head	sMMapOffsetStructList;
 
     IMG_HANDLE		hSmartCache;
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+    IMG_HANDLE		buf;	/* external buffer handle, like a GEM or ION buffer */
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
 };
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,17))
@@ -330,7 +334,7 @@ LinuxMemAreaRootType(LinuxMemArea *psLinuxMemArea)
 const IMG_CHAR *LinuxMemAreaTypeToString(LINUX_MEM_AREA_TYPE eMemAreaType);
 
 
-#if defined(DEBUG) || defined(DEBUG_LINUX_MEM_AREAS)
+#if defined(DEBUG_LINUX_MEM_AREAS) || defined(DEBUG_LINUX_MMAP_AREAS)
 const IMG_CHAR *HAPFlagsToString(IMG_UINT32 ui32Flags);
 #endif
 

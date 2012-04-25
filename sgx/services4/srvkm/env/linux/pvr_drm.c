@@ -44,7 +44,7 @@
 #include <drm/drmP.h>
 #include <drm/drm.h>
 
-#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+#ifdef SUPPORT_DRI_DRM_EXTERNAL
 #  include <linux/omap_drm.h>
 #endif
 
@@ -69,6 +69,7 @@
 #include "lock.h"
 #include "linkage.h"
 #include "pvr_drm.h"
+#include "private_data.h"
 
 #if defined(PVR_DRI_DRM_NOT_PCI)
 #include "pvr_drm_mod.h"
@@ -235,15 +236,14 @@ PVRSRVDrmOpen(struct drm_device *dev, struct drm_file *file)
 DRI_DRM_STATIC void
 PVRSRVDrmPostClose(struct drm_device *dev, struct drm_file *file)
 {
-	PVRSRVRelease(file->driver_priv);
-
-	file->driver_priv = NULL;
+	PVRSRVRelease(get_private(file));
+	set_private(file, IMG_NULL);
 }
 #elif defined(SUPPORT_DRI_DRM_EXTERNAL)
 DRI_DRM_STATIC int
 PVRSRVDrmRelease(struct drm_device *dev, struct drm_file *file)
 {
-	void *psDriverPriv = file->driver_priv;
+	void *psDriverPriv = get_private(file);
 
 	PVR_TRACE(("PVRSRVDrmRelease: psDriverPriv=%p", psDriverPriv));
 
@@ -252,6 +252,8 @@ PVRSRVDrmRelease(struct drm_device *dev, struct drm_file *file)
 		PVRSRVRelease(psDriverPriv);
 	}
 
+	set_private(file, IMG_NULL);
+
 	return 0;
 }
 #else
@@ -259,7 +261,7 @@ DRI_DRM_STATIC int
 PVRSRVDrmRelease(struct inode *inode, struct file *filp)
 {
 	struct drm_file *file_priv = filp->private_data;
-	void *psDriverPriv = file_priv->driver_priv;
+	void *psDriverPriv = get_private(file_priv);
 	int ret;
 
 	ret = drm_release(inode, filp);
@@ -386,6 +388,8 @@ static int pvr_max_ioctl = DRM_ARRAY_SIZE(sPVRDrmIoctls);
 #endif
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+int pvr_ioctl_base;
+int pvr_mapper_id;
 static struct omap_drm_plugin plugin = {
 		.name = PVR_DRM_NAME,
 
@@ -394,11 +398,10 @@ static struct omap_drm_plugin plugin = {
 		.unload = PVRSRVDrmUnload,
 
 		.release = PVRSRVDrmRelease,
-		.mmap = PVRMMap,
 
 		.ioctls = sPVRDrmIoctls,
 		.num_ioctls = ARRAY_SIZE(sPVRDrmIoctls),
-		.ioctl_start = 0,
+		.ioctl_base = 0,  /* initialized when plugin is registered */
 };
 #else
 static struct drm_driver sPVRDrmDriver = 
@@ -501,6 +504,8 @@ static int __init PVRSRVDrmInit(void)
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
 	iRes = omap_drm_register_plugin(&plugin);
+	pvr_ioctl_base = plugin.ioctl_base;
+	pvr_mapper_id = omap_drm_register_mapper();
 #else
 	iRes = drm_init(&sPVRDrmDriver);
 #endif
@@ -517,6 +522,7 @@ static int __init PVRSRVDrmInit(void)
 static void __exit PVRSRVDrmExit(void)
 {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+	omap_drm_unregister_mapper(pvr_mapper_id);
 	omap_drm_unregister_plugin(&plugin);
 #else
 	drm_exit(&sPVRDrmDriver);

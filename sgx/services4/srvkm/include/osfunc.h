@@ -152,7 +152,7 @@ static INLINE IMG_BOOL OSInvalidateCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 
 #endif 
 
-#if defined(__linux__)
+#if (defined(__linux__) || defined(__QNXNTO__))
 PVRSRV_ERROR OSRegisterDiscontigMem(IMG_SYS_PHYADDR *pBasePAddr,
 									IMG_VOID *pvCpuVAddr, 
 									IMG_SIZE_T ui32Bytes,
@@ -199,13 +199,13 @@ static INLINE PVRSRV_ERROR OSUnRegisterDiscontigMem(IMG_VOID *pvCpuVAddr,
 #endif	
 
 
-#if defined(__linux__)
+#if (defined(__linux__) || defined(__QNXNTO__))
 #ifdef INLINE_IS_PRAGMA
 #pragma inline(OSReserveDiscontigPhys)
 #endif
 static INLINE PVRSRV_ERROR OSReserveDiscontigPhys(IMG_SYS_PHYADDR *pBasePAddr, IMG_SIZE_T ui32Bytes, IMG_UINT32 ui32Flags, IMG_VOID **ppvCpuVAddr, IMG_HANDLE *phOSMemHandle)
 {
-#if defined(__linux__)	
+#if defined(__linux__) || defined(__QNXNTO__) 
 	*ppvCpuVAddr = IMG_NULL;
 	return OSRegisterDiscontigMem(pBasePAddr, *ppvCpuVAddr, ui32Bytes, ui32Flags, phOSMemHandle);	
 #else
@@ -218,7 +218,7 @@ static INLINE PVRSRV_ERROR OSReserveDiscontigPhys(IMG_SYS_PHYADDR *pBasePAddr, I
 
 static INLINE PVRSRV_ERROR OSUnReserveDiscontigPhys(IMG_VOID *pvCpuVAddr, IMG_SIZE_T ui32Bytes, IMG_UINT32 ui32Flags, IMG_HANDLE hOSMemHandle)
 {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__QNXNTO__) 
 	OSUnRegisterDiscontigMem(pvCpuVAddr, ui32Bytes, ui32Flags, hOSMemHandle);
 #endif
 	
@@ -267,7 +267,7 @@ PVRSRV_ERROR OSUnRegisterMem(IMG_VOID *pvCpuVAddr,
 
 
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__QNXNTO__)
 PVRSRV_ERROR OSGetSubMemHandle(IMG_HANDLE hOSMemHandle,
 							   IMG_UINTPTR_T ui32ByteOffset,
 							   IMG_SIZE_T ui32Bytes,
@@ -368,7 +368,7 @@ PVRSRV_ERROR OSFreePages(IMG_UINT32 ui32Flags, IMG_SIZE_T ui32Size, IMG_PVOID pv
 	#define OSFreeMem_Debug_Wrapper OSFreeMem_Debug_Linux_Memory_Allocations
 #endif
  
-#if defined(__linux__) && defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
+#if (defined(__linux__) || defined(__QNXNTO__)) && defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
 	PVRSRV_ERROR OSAllocMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T ui32Size, IMG_PVOID *ppvLinAddr, IMG_HANDLE *phBlockAlloc, IMG_CHAR *pszFilename, IMG_UINT32 ui32Line);
 	PVRSRV_ERROR OSFreeMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T ui32Size, IMG_PVOID pvLinAddr, IMG_HANDLE hBlockAlloc, IMG_CHAR *pszFilename, IMG_UINT32 ui32Line);
 	
@@ -387,7 +387,12 @@ PVRSRV_ERROR OSFreePages(IMG_UINT32 ui32Flags, IMG_SIZE_T ui32Size, IMG_PVOID pv
 IMG_VOID OSMemHandleRegisterSmart(IMG_VOID *hOSMemHandle, IMG_HANDLE hSmartCache);
 IMG_VOID OSMemHandleUnegisterSmart(IMG_VOID *hOSMemHandle, IMG_HANDLE hSmartCache);
 
-#if defined(__linux__)
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+IMG_VOID OSMemHandleSetGEM(IMG_VOID *hOSMemHandle, IMG_HANDLE buf);
+IMG_HANDLE OSMemHandleGetGEM(IMG_VOID *hOSMemHandle);
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
+#if defined(__linux__) || defined(__QNXNTO__)
 IMG_CPU_PHYADDR OSMemHandleToCpuPAddr(IMG_VOID *hOSMemHandle, IMG_SIZE_T ui32ByteOffset);
 #else
 #ifdef INLINE_IS_PRAGMA
@@ -535,7 +540,7 @@ IMG_BOOL OSAccessOK(IMG_VERIFY_TEST eVerification, IMG_VOID *pvUserPtr, IMG_SIZE
 PVRSRV_ERROR OSCopyToUser(IMG_PVOID pvProcess, IMG_VOID *pvDest, IMG_VOID *pvSrc, IMG_SIZE_T ui32Bytes);
 PVRSRV_ERROR OSCopyFromUser(IMG_PVOID pvProcess, IMG_VOID *pvDest, IMG_VOID *pvSrc, IMG_SIZE_T ui32Bytes);
 
-#if defined(__linux__)
+#if (defined(__linux__) || defined(__QNXNTO__))
 PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID* pvCPUVAddr, 
 									IMG_SIZE_T ui32Bytes, 
 									IMG_SYS_PHYADDR *psSysPAddr,
