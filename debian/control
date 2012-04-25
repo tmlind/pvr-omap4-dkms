@@ -5,6 +5,11 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~),
                chrpath,
                libxext6,
+               libx11-6,
+               libdrm2 (>= 2.4.3),
+               libdrm-omap1,
+               libdri2-1,
+               libpixman-1-0,
                libxfixes3 (>= 1:4.0.1),
                xserver-xorg-dev (>= 2:1.11.0)
 Standards-Version: 3.9.3

@@ -22,7 +22,7 @@ if [ "$1" = "configure" ]; then
         --slave /#BINDIR#/xgles2test1 #DEB_HOST_MULTIARCH#_xgles2test1 /#PKGBINDIR#/xgles2test1 \
         --slave /#BINDIR#/xmultiegltest #DEB_HOST_MULTIARCH#_xmultiegltest /#PKGBINDIR#/xmultiegltest \
         --slave /#BINDIR#/xovg_unit_test #DEB_HOST_MULTIARCH#_xovg_unit_test /#PKGBINDIR#/xovg_unit_test \
-        --slave /#LIBDIR#/xorg/modules/drivers/pvr_drv.so #DEB_HOST_MULTIARCH#_pvr_drv /#PKGLIBDIR#/xorg/modules/drivers/pvr_drv.so
+        --slave /#LIBDIR#/xorg/modules/drivers/omap_pvr_drv.so #DEB_HOST_MULTIARCH#_pvr_drv /#PKGLIBDIR#/xorg/modules/drivers/omap_pvr_drv.so
 
     # ldconfig needs to be run immediately as we're changing /etc/ld.so.conf.d/ with
     # alternatives.

@@ -1,0 +1,437 @@
+From 27770152b07d3ff7a9e0a606fa37e00750118320 Mon Sep 17 00:00:00 2001
+From: Ricardo Salveti de Araujo <ricardo.salveti@linaro.org>
+Date: Wed, 25 Apr 2012 19:11:05 -0300
+Subject: [PATCH] Adding build workaround for omap_drv.h and omap_drm.h
+
+Signed-off-by: Ricardo Salveti de Araujo <ricardo.salveti@linaro.org>
+---
+ services4/srvkm/include/linux/omap_drm.h |  125 +++++++++++++
+ services4/srvkm/include/linux/omap_drv.h |  284 ++++++++++++++++++++++++++++++
+ 2 files changed, 409 insertions(+)
+ create mode 100644 services4/srvkm/include/linux/omap_drm.h
+ create mode 100644 services4/srvkm/include/linux/omap_drv.h
+
+diff --git a/services4/srvkm/include/linux/omap_drm.h b/services4/srvkm/include/linux/omap_drm.h
+new file mode 100644
+index 0000000..be61257
+--- /dev/null
++++ b/services4/srvkm/include/linux/omap_drm.h
+@@ -0,0 +1,125 @@
++/*
++ * include/drm/omap_drm.h
++ *
++ * Copyright (C) 2011 Texas Instruments
++ * Author: Rob Clark <rob@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef __OMAP_DRM_H__
++#define __OMAP_DRM_H__
++
++#include <drm/drm.h>
++
++/* Please note that modifications to all structs defined here are
++ * subject to backwards-compatibility constraints.
++ */
++
++#define OMAP_PARAM_CHIPSET_ID	1	/* ie. 0x3430, 0x4430, etc */
++
++struct drm_omap_param {
++	uint64_t param;			/* in */
++	uint64_t value;			/* in (set_param), out (get_param) */
++};
++
++struct drm_omap_get_base {
++	char plugin_name[64];		/* in */
++	uint32_t ioctl_base;		/* out */
++	uint32_t __pad;
++};
++
++#define OMAP_BO_SCANOUT		0x00000001	/* scanout capable (phys contiguous) */
++#define OMAP_BO_CACHE_MASK	0x00000006	/* cache type mask, see cache modes */
++#define OMAP_BO_TILED_MASK	0x00000f00	/* tiled mapping mask, see tiled modes */
++
++/* cache modes */
++#define OMAP_BO_CACHED		0x00000000	/* default */
++#define OMAP_BO_WC		0x00000002	/* write-combine */
++#define OMAP_BO_UNCACHED	0x00000004	/* strongly-ordered (uncached) */
++
++/* tiled modes */
++#define OMAP_BO_TILED_8		0x00000100
++#define OMAP_BO_TILED_16	0x00000200
++#define OMAP_BO_TILED_32	0x00000300
++#define OMAP_BO_TILED		(OMAP_BO_TILED_8 | OMAP_BO_TILED_16 | OMAP_BO_TILED_32)
++
++union omap_gem_size {
++	uint32_t bytes;		/* (for non-tiled formats) */
++	struct {
++		uint16_t width;
++		uint16_t height;
++	} tiled;		/* (for tiled formats) */
++};
++
++struct drm_omap_gem_new {
++	union omap_gem_size size;	/* in */
++	uint32_t flags;			/* in */
++	uint32_t handle;		/* out */
++	uint32_t __pad;
++};
++
++/* mask of operations: */
++enum omap_gem_op {
++	OMAP_GEM_READ = 0x01,
++	OMAP_GEM_WRITE = 0x02,
++};
++
++struct drm_omap_gem_cpu_prep {
++	uint32_t handle;		/* buffer handle (in) */
++	uint32_t op;			/* mask of omap_gem_op (in) */
++};
++
++struct drm_omap_gem_cpu_fini {
++	uint32_t handle;		/* buffer handle (in) */
++	uint32_t op;			/* mask of omap_gem_op (in) */
++	/* TODO maybe here we pass down info about what regions are touched
++	 * by sw so we can be clever about cache ops?  For now a placeholder,
++	 * set to zero and we just do full buffer flush..
++	 */
++	uint32_t nregions;
++	uint32_t __pad;
++};
++
++struct drm_omap_gem_info {
++	uint32_t handle;		/* buffer handle (in) */
++	uint32_t pad;
++	uint64_t offset;		/* mmap offset (out) */
++	/* note: in case of tiled buffers, the user virtual size can be
++	 * different from the physical size (ie. how many pages are needed
++	 * to back the object) which is returned in DRM_IOCTL_GEM_OPEN..
++	 * This size here is the one that should be used if you want to
++	 * mmap() the buffer:
++	 */
++	uint32_t size;			/* virtual size for mmap'ing (out) */
++	uint32_t __pad;
++};
++
++#define DRM_OMAP_GET_PARAM		0x00
++#define DRM_OMAP_SET_PARAM		0x01
++#define DRM_OMAP_GET_BASE		0x02
++#define DRM_OMAP_GEM_NEW		0x03
++#define DRM_OMAP_GEM_CPU_PREP		0x04
++#define DRM_OMAP_GEM_CPU_FINI		0x05
++#define DRM_OMAP_GEM_INFO		0x06
++#define DRM_OMAP_NUM_IOCTLS		0x07
++
++#define DRM_IOCTL_OMAP_GET_PARAM	DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GET_PARAM, struct drm_omap_param)
++#define DRM_IOCTL_OMAP_SET_PARAM	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_SET_PARAM, struct drm_omap_param)
++#define DRM_IOCTL_OMAP_GET_BASE		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GET_BASE, struct drm_omap_get_base)
++#define DRM_IOCTL_OMAP_GEM_NEW		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GEM_NEW, struct drm_omap_gem_new)
++#define DRM_IOCTL_OMAP_GEM_CPU_PREP	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_GEM_CPU_PREP, struct drm_omap_gem_cpu_prep)
++#define DRM_IOCTL_OMAP_GEM_CPU_FINI	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_GEM_CPU_FINI, struct drm_omap_gem_cpu_fini)
++#define DRM_IOCTL_OMAP_GEM_INFO		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GEM_INFO, struct drm_omap_gem_info)
++
++#endif /* __OMAP_DRM_H__ */
+diff --git a/services4/srvkm/include/linux/omap_drv.h b/services4/srvkm/include/linux/omap_drv.h
+new file mode 100644
+index 0000000..3918542
+--- /dev/null
++++ b/services4/srvkm/include/linux/omap_drv.h
+@@ -0,0 +1,284 @@
++/*
++ * drivers/staging/omapdrm/omap_drv.h
++ *
++ * Copyright (C) 2011 Texas Instruments
++ * Author: Rob Clark <rob@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef __OMAP_DRV_H__
++#define __OMAP_DRV_H__
++
++#include <video/omapdss.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
++#include <plat/drm.h>
++#include "omap_drm.h"
++
++#define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
++#define VERB(fmt, ...) if (0) DRM_DEBUG(fmt, ##__VA_ARGS__) /* verbose debug */
++
++#define MODULE_NAME     "omapdrm"
++
++/* max # of mapper-id's that can be assigned.. todo, come up with a better
++ * (but still inexpensive) way to store/access per-buffer mapper private
++ * data..
++ */
++#define MAX_MAPPERS 2
++
++struct omap_drm_private {
++	unsigned int num_crtcs;
++	struct drm_crtc *crtcs[8];
++
++	unsigned int num_planes;
++	struct drm_plane *planes[8];
++
++	unsigned int num_encoders;
++	struct drm_encoder *encoders[8];
++
++	unsigned int num_connectors;
++	struct drm_connector *connectors[8];
++
++	struct drm_fb_helper *fbdev;
++
++	struct workqueue_struct *wq;
++
++	struct list_head obj_list;
++
++	bool has_dmm;
++
++	/* properties: */
++	struct drm_property *rotation_prop;
++};
++
++/* this should probably be in drm-core to standardize amongst drivers */
++#define DRM_ROTATE_0	0
++#define DRM_ROTATE_90	1
++#define DRM_ROTATE_180	2
++#define DRM_ROTATE_270	3
++#define DRM_REFLECT_X	4
++#define DRM_REFLECT_Y	5
++
++/* parameters which describe (unrotated) coordinates of scanout within a fb: */
++struct omap_drm_window {
++	uint32_t rotation;
++	int32_t  crtc_x, crtc_y;		/* signed because can be offscreen */
++	uint32_t crtc_w, crtc_h;
++	uint32_t src_x, src_y;
++	uint32_t src_w, src_h;
++};
++
++#ifdef CONFIG_DEBUG_FS
++int omap_debugfs_init(struct drm_minor *minor);
++void omap_debugfs_cleanup(struct drm_minor *minor);
++void omap_framebuffer_describe(struct drm_framebuffer *fb, struct seq_file *m);
++void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m);
++void omap_gem_describe_objects(struct list_head *list, struct seq_file *m);
++#endif
++
++struct drm_fb_helper *omap_fbdev_init(struct drm_device *dev);
++void omap_fbdev_free(struct drm_device *dev);
++
++struct drm_crtc *omap_crtc_init(struct drm_device *dev,
++		struct omap_overlay *ovl, int id);
++
++struct drm_plane *omap_plane_init(struct drm_device *dev,
++		struct omap_overlay *ovl, unsigned int possible_crtcs,
++		bool priv);
++int omap_plane_dpms(struct drm_plane *plane, int mode);
++int omap_plane_mode_set(struct drm_plane *plane,
++		struct drm_crtc *crtc, struct drm_framebuffer *fb,
++		int crtc_x, int crtc_y,
++		unsigned int crtc_w, unsigned int crtc_h,
++		uint32_t src_x, uint32_t src_y,
++		uint32_t src_w, uint32_t src_h);
++void omap_plane_on_endwin(struct drm_plane *plane,
++		void (*fxn)(void *), void *arg);
++void omap_plane_install_properties(struct drm_plane *plane,
++		struct drm_mode_object *obj);
++int omap_plane_set_property(struct drm_plane *plane,
++		struct drm_property *property, uint64_t val);
++
++struct drm_encoder *omap_encoder_init(struct drm_device *dev,
++		struct omap_overlay_manager *mgr);
++struct omap_overlay_manager *omap_encoder_get_manager(
++		struct drm_encoder *encoder);
++struct drm_encoder *omap_connector_attached_encoder(
++		struct drm_connector *connector);
++enum drm_connector_status omap_connector_detect(
++		struct drm_connector *connector, bool force);
++
++struct drm_connector *omap_connector_init(struct drm_device *dev,
++		int connector_type, struct omap_dss_device *dssdev);
++void omap_connector_mode_set(struct drm_connector *connector,
++		struct drm_display_mode *mode);
++void omap_connector_flush(struct drm_connector *connector,
++		int x, int y, int w, int h);
++
++uint32_t omap_framebuffer_get_formats(uint32_t *pixel_formats,
++		uint32_t max_formats, enum omap_color_mode supported_modes);
++struct drm_framebuffer *omap_framebuffer_create(struct drm_device *dev,
++		struct drm_file *file, struct drm_mode_fb_cmd2 *mode_cmd);
++struct drm_framebuffer *omap_framebuffer_init(struct drm_device *dev,
++		struct drm_mode_fb_cmd2 *mode_cmd, struct drm_gem_object **bos);
++struct drm_gem_object *omap_framebuffer_bo(struct drm_framebuffer *fb, int p);
++int omap_framebuffer_replace(struct drm_framebuffer *a,
++		struct drm_framebuffer *b, void *arg,
++		void (*unpin)(void *arg, struct drm_gem_object *bo));
++void omap_framebuffer_update_scanout(struct drm_framebuffer *fb,
++		struct omap_drm_window *win, struct omap_overlay_info *info);
++struct drm_connector *omap_framebuffer_get_next_connector(
++		struct drm_framebuffer *fb, struct drm_connector *from);
++void omap_framebuffer_flush(struct drm_framebuffer *fb,
++		int x, int y, int w, int h);
++
++void omap_gem_init(struct drm_device *dev);
++void omap_gem_deinit(struct drm_device *dev);
++
++struct drm_gem_object *omap_gem_new(struct drm_device *dev,
++		union omap_gem_size gsize, uint32_t flags);
++int omap_gem_new_handle(struct drm_device *dev, struct drm_file *file,
++		union omap_gem_size gsize, uint32_t flags, uint32_t *handle);
++void omap_gem_free_object(struct drm_gem_object *obj);
++int omap_gem_init_object(struct drm_gem_object *obj);
++void *omap_gem_vaddr(struct drm_gem_object *obj);
++int omap_gem_dumb_map_offset(struct drm_file *file, struct drm_device *dev,
++		uint32_t handle, uint64_t *offset);
++int omap_gem_dumb_destroy(struct drm_file *file, struct drm_device *dev,
++		uint32_t handle);
++int omap_gem_dumb_create(struct drm_file *file, struct drm_device *dev,
++		struct drm_mode_create_dumb *args);
++int omap_gem_mmap(struct file *filp, struct vm_area_struct *vma);
++int omap_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
++int omap_gem_op_start(struct drm_gem_object *obj, enum omap_gem_op op);
++int omap_gem_op_finish(struct drm_gem_object *obj, enum omap_gem_op op);
++int omap_gem_op_sync(struct drm_gem_object *obj, enum omap_gem_op op);
++int omap_gem_op_async(struct drm_gem_object *obj, enum omap_gem_op op,
++		void (*fxn)(void *arg), void *arg);
++int omap_gem_roll(struct drm_gem_object *obj, uint32_t roll);
++int omap_gem_get_paddr(struct drm_gem_object *obj,
++		dma_addr_t *paddr, bool remap);
++int omap_gem_put_paddr(struct drm_gem_object *obj);
++int omap_gem_get_pages(struct drm_gem_object *obj, struct page ***pages,
++		bool remap);
++int omap_gem_put_pages(struct drm_gem_object *obj);
++uint32_t omap_gem_flags(struct drm_gem_object *obj);
++int omap_gem_rotated_paddr(struct drm_gem_object *obj, uint32_t orient,
++		int x, int y, dma_addr_t *paddr);
++uint64_t omap_gem_mmap_offset(struct drm_gem_object *obj);
++size_t omap_gem_mmap_size(struct drm_gem_object *obj);
++int omap_gem_tiled_size(struct drm_gem_object *obj, uint16_t *w, uint16_t *h);
++int omap_gem_tiled_stride(struct drm_gem_object *obj, uint32_t orient);
++
++struct dma_buf * omap_gem_prime_export(struct drm_device *dev,
++		struct drm_gem_object *obj, int flags);
++
++static inline int align_pitch(int pitch, int width, int bpp)
++{
++	int bytespp = (bpp + 7) / 8;
++	/* in case someone tries to feed us a completely bogus stride: */
++	pitch = max(pitch, width * bytespp);
++	/* PVR needs alignment to 8 pixels.. right now that is the most
++	 * restrictive stride requirement..
++	 */
++	return ALIGN(pitch, 8 * bytespp);
++}
++
++/* should these be made into common util helpers?
++ */
++
++static inline int objects_lookup(struct drm_device *dev,
++		struct drm_file *filp, uint32_t pixel_format,
++		struct drm_gem_object **bos, uint32_t *handles)
++{
++	int i, n = drm_format_num_planes(pixel_format);
++
++	for (i = 0; i < n; i++) {
++		bos[i] = drm_gem_object_lookup(dev, filp, handles[i]);
++		if (!bos[i]) {
++			goto fail;
++		}
++	}
++
++	return 0;
++
++fail:
++	while (--i > 0) {
++		drm_gem_object_unreference_unlocked(bos[i]);
++	}
++	return -ENOENT;
++}
++
++
++/****** PLUGIN API specific ******/
++
++/* interface that plug-in drivers (for now just PVR) can implement */
++struct omap_drm_plugin {
++	const char *name;
++
++	/* drm functions */
++	int (*load)(struct drm_device *dev, unsigned long flags);
++	int (*unload)(struct drm_device *dev);
++	int (*open)(struct drm_device *dev, struct drm_file *file);
++	int (*release)(struct drm_device *dev, struct drm_file *file);
++
++	struct drm_ioctl_desc *ioctls;
++	int num_ioctls;
++	int ioctl_base;
++
++	struct list_head list;  /* note, this means struct can't be const.. */
++};
++
++int omap_drm_register_plugin(struct omap_drm_plugin *plugin);
++int omap_drm_unregister_plugin(struct omap_drm_plugin *plugin);
++
++int omap_drm_register_mapper(void);
++void omap_drm_unregister_mapper(int id);
++
++void * omap_drm_file_priv(struct drm_file *file, int mapper_id);
++void omap_drm_file_set_priv(struct drm_file *file, int mapper_id, void *priv);
++
++void * omap_gem_priv(struct drm_gem_object *obj, int mapper_id);
++void omap_gem_set_priv(struct drm_gem_object *obj, int mapper_id, void *priv);
++void omap_gem_vm_open(struct vm_area_struct *vma);
++void omap_gem_vm_close(struct vm_area_struct *vma);
++
++/* for external plugin buffers wrapped as GEM object (via. omap_gem_new_ext())
++ * a vm_ops struct can be provided to get callback notification of various
++ * events..
++ */
++struct omap_gem_vm_ops {
++	void (*open)(struct vm_area_struct * area);
++	void (*close)(struct vm_area_struct * area);
++	//maybe: int (*fault)(struct vm_area_struct *vma, struct vm_fault *vmf);
++
++	/* note: mmap is not expected to do anything.. it is just to allow buffer
++	 * allocate to update it's own internal state
++	 */
++	void (*mmap)(struct file *, struct vm_area_struct *);
++};
++
++struct drm_gem_object * omap_gem_new_ext(struct drm_device *dev,
++		union omap_gem_size gsize, uint32_t flags,
++		dma_addr_t paddr, struct page **pages,
++		struct omap_gem_vm_ops *ops);
++
++void omap_gem_op_update(void);
++int omap_gem_set_sync_object(struct drm_gem_object *obj, void *syncobj);
++/*********************************/
++
++
++#endif /* __OMAP_DRV_H__ */
+-- 
+1.7.9.5
+

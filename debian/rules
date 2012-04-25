@@ -110,7 +110,7 @@ build:
 	# remove rpath from the binaries and libraries
 	find usr/bin -type f -exec chrpath -d {} +
 	find usr/lib -maxdepth 1 -iname "*.so*" -type f -exec chrpath -d {} +
-	chrpath -d usr/lib/xorg/modules/drivers/pvr_drv.so
+	chrpath -d usr/lib/xorg/modules/drivers/omap_pvr_drv.so
 
 	dh build
 
