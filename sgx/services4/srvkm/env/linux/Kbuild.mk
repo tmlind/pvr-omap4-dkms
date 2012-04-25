@@ -123,6 +123,8 @@ $(PVRSRV_MODNAME)-y += \
 
 ccflags-y += \
  -I$(KERNELDIR)/include/drm \
+ -I$(KERNELDIR)/drivers/staging/omapdrm \
+ -I$(KERNELDIR)/include/linux \
  -I$(TOP)/services4/include/env/linux \
 
 ifeq ($(PVR_DRI_DRM_NOT_PCI),1)

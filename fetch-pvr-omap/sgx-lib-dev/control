@@ -1,10 +1,10 @@
 Package: sgx-lib-dev
 Source: sgx-lib
-Version: 1.7.10.0.1-1glp21
+Version: 1.7.15.0.1-1glp57
 Architecture: armhf
 Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
 Installed-Size: 301
-Depends: sgx-lib (= 1.7.10.0.1-1glp21), libx11-dev
+Depends: sgx-lib (= 1.7.15.0.1-1glp57), libx11-dev
 Conflicts: libegl1-mesa-dev, libegl1-sgx-omap4-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles1-sgx-omap4-dev, libgles2-dev, libgles2-mesa-dev, libgles2-sgx-omap4-dev, libopenvg1-dev, libopenvg1-mesa-dev, libopenvg1-sgx-omap4-dev
 Replaces: libegl1-mesa-dev, libegl1-sgx-omap4-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles1-sgx-omap4-dev, libgles2-dev, libgles2-mesa-dev, libgles2-sgx-omap4-dev, libopenvg1-dev, libopenvg1-mesa-dev, libopenvg1-sgx-omap4-dev
 Provides: libegl1-mesa-dev, libegl1-x11-dev, libgles1-dev, libgles1-mesa-dev, libgles2-dev, libgles2-mesa-dev, libopenvg1-dev, libopenvg1-mesa-dev

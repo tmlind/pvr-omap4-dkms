@@ -1,0 +1,13 @@
+xf86-video-omap was packaged for Debian by:
+
+    Xavier Boudet <x-boudet@ti.com> on Wed, 28 Mar 2012 10:45:01 +0200
+
+Original source code was downloaded from <ssh://<user>@gerrit.ext.ti.com:29418/glp/xf86-video-omap-pvr.git>
+
+Copyright:
+
+    Copyright © 2011 Texas Instruments, Inc.
+    This package is distributed by Texas Instruments under terms provided in an
+    Exhibit to a Texas Instruments Master License Agreement. 
+    Refer to the signed copy of your license for details. All further rights reserved.                                                                      
+

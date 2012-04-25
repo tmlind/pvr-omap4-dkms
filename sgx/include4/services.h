@@ -1153,7 +1153,7 @@ static INLINE IMG_VOID PVRSRVPostSemaphore(PVRSRV_SEMAPHORE_HANDLE hSemaphore, I
 #endif 
 
 
-#if (defined(DEBUG) && defined(__linux__))
+#if (defined(DEBUG) && (defined(__linux__) || defined(__QNXNTO__)))
 IMG_IMPORT IMG_PVOID IMG_CALLCONV PVRSRVAllocUserModeMemTracking(IMG_SIZE_T ui32Size, IMG_CHAR *pszFileName, IMG_UINT32 ui32LineNumber);
 
 IMG_IMPORT IMG_PVOID IMG_CALLCONV PVRSRVCallocUserModeMemTracking(IMG_SIZE_T ui32Size, IMG_CHAR *pszFileName, IMG_UINT32 ui32LineNumber);
@@ -1252,6 +1252,11 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFreeSyncInfo(IMG_CONST PVRSRV_DEV_DATA *psDevDat
 IMG_IMPORT
 const IMG_CHAR *PVRSRVGetErrorString(PVRSRV_ERROR eError);
 
+
+IMG_IMPORT
+PVRSRV_ERROR IMG_CALLCONV PVRSRVCacheInvalidate(const PVRSRV_CONNECTION *psConnection,
+                                                IMG_PVOID pvLinearAddress,
+	                                            IMG_UINT32 ui32Size);
 
 #define TIME_NOT_PASSED_UINT32(a,b,c)		(((a) - (b)) < (c))
 

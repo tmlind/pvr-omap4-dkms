@@ -115,12 +115,6 @@
 MODULE_SUPPORTED_DEVICE(DEVNAME);
 #endif
 
-#if defined(SUPPORT_DRI_DRM)
-#define PRIVATE_DATA(pFile) ((pFile)->driver_priv)
-#else
-#define PRIVATE_DATA(pFile) ((pFile)->private_data)
-#endif
-
 #if defined(PVRSRV_NEED_PVR_DPF)
 #include <linux/moduleparam.h>
 extern IMG_UINT32 gPVRDebugLevel;
@@ -253,7 +247,7 @@ static int __devinit PVRSRVDriverProbe(LDM_DEV *pDevice, const struct pci_device
 {
 	SYS_DATA *psSysData;
 
-	PVR_TRACE(("PVRSRVDriverProbe(pDevice=%p)", pDevice));
+	PVR_TRACE(("PVRSRVDriverProbe(pDevice=%p) (%s)", pDevice, pDevice->name));
 
 #if 0
 	
@@ -476,7 +470,7 @@ static int PVRSRVOpen(struct inode unref__ * pInode, struct file *pFile)
 #endif
 	psPrivateData->ui32OpenPID = ui32PID;
 	psPrivateData->hBlockAlloc = hBlockAlloc;
-	PRIVATE_DATA(pFile) = psPrivateData;
+	set_private(pFile, psPrivateData);
 	iRet = 0;
 err_unlock:	
 	LinuxUnLockMutex(&gPVRSRVLock);
@@ -497,7 +491,7 @@ static int PVRSRVRelease(struct inode unref__ * pInode, struct file *pFile)
 #if defined(SUPPORT_DRI_DRM)
 	psPrivateData = (PVRSRV_FILE_PRIVATE_DATA *)pvPrivData;
 #else
-	psPrivateData = PRIVATE_DATA(pFile);
+	psPrivateData = get_private(pFile);
 #endif
 	if (psPrivateData != IMG_NULL)
 	{
@@ -515,7 +509,7 @@ static int PVRSRVRelease(struct inode unref__ * pInode, struct file *pFile)
 				  psPrivateData, psPrivateData->hBlockAlloc);
 
 #if !defined(SUPPORT_DRI_DRM)
-		PRIVATE_DATA(pFile) = IMG_NULL; 
+		set_private(pFile, IMG_NULL);
 #endif
 	}
 

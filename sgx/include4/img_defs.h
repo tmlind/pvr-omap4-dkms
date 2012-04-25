@@ -77,7 +77,7 @@ typedef char				TCHAR, *PTCHAR, *PTSTR;
 #endif 
 
 
-			#if defined(__linux__) || defined(__METAG)
+			#if defined(__linux__) || defined(__QNXNTO__) || defined(__METAG)
 
 				#define IMG_CALLCONV
 				#define IMG_INTERNAL	__attribute__((visibility("hidden")))

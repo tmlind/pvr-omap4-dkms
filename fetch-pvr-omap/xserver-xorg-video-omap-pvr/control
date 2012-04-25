@@ -1,0 +1,26 @@
+Package: xserver-xorg-video-omap-pvr
+Source: xf86-video-omap-pvr
+Version: 0.1.0-0ubuntu1
+Architecture: armhf
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Installed-Size: 103
+Depends: libc6 (>= 2.4), libdrm-omap1 (>= 2.4.26), libdrm2 (>= 2.3.1), libpixman-1-0 (>= 0.13.2), xorg-video-abi-11, xserver-xorg-core (>= 2:1.10.99.901)
+Provides: xorg-driver-video
+Section: x11
+Priority: optional
+Description: X.org graphics -- TI OMAP pvr display driver
+ This driver for the X.org server provides support for OMAP3 and
+ newer devices. Currently it relies on a closed-source submodule
+ for EXA acceleration on the following chipsets:
+  + OMAP3430
+  + OMAP3630
+  + OMAP4430
+  + OMAP4460
+ .
+ The driver depends on omapdrm driver in the kernel with
+ GEM support.
+ .
+ More information about X.org can be found at:
+  * <URL:http://www.X.org>
+  * <URL:http://xorg.freedesktop.org>
+  * <URL:http://lists.freedesktop.org/mailman/listinfo/xorg>

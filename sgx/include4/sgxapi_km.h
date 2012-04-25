@@ -33,7 +33,7 @@ extern "C" {
 
 #include "sgxdefs.h"
 
-#if defined(__linux__) && !defined(USE_CODE)
+#if (defined(__linux__) || defined(__QNXNTO__)) && !defined(USE_CODE)
 	#if defined(__KERNEL__)
 		#include <asm/unistd.h>
 	#else

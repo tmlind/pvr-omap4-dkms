@@ -30,7 +30,7 @@
 #
 
 ifeq ($(BUILD),debug)
-COMMON_FLAGS := -O0
+COMMON_FLAGS := -Os
 else
 OPTIM ?= -O2
 COMMON_FLAGS := $(OPTIM)
@@ -119,7 +119,8 @@ ALL_LDFLAGS += $(SYS_LDFLAGS)
 # Kernel C only
 #
 ALL_KBUILD_CFLAGS := $(COMMON_CFLAGS) -Wno-unused-parameter -Wno-sign-compare \
- $(call cc-option,-Wno-type-limits)
+ $(call cc-option,-Wno-type-limits) \
+ $(call cc-option,-Wno-unused-but-set-variable)
 
 # This variable contains a list of all modules built by kbuild
 ALL_KBUILD_MODULES :=

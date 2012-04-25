@@ -339,6 +339,7 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 	#define PDUMPMALLOCPAGETABLE	PDumpMallocPageTable
 	#define PDUMPSETMMUCONTEXT		PDumpSetMMUContext
 	#define PDUMPCLEARMMUCONTEXT	PDumpClearMMUContext
+    #define PDUMPPDDEVPADDR         PDumpPDDevPAddrKM
 	#define PDUMPFREEPAGES			PDumpFreePages
 	#define PDUMPFREEPAGETABLE		PDumpFreePageTable
 	#define PDUMPPDREG				PDumpPDReg
@@ -355,7 +356,7 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 	#define PDUMPRESUME				PDumpResumeKM
 
 #else
-		#if ((defined(LINUX) || defined(GCC_IA32)) || defined(GCC_ARM))
+        #if (((defined(LINUX) || defined(__QNXNTO__)) || defined(GCC_IA32)) || defined(GCC_ARM))
 			#define PDUMPMEMPOL(args...)
 			#define PDUMPMEM(args...)
 			#define PDUMPMEMPTENTRIES(args...)
@@ -375,6 +376,7 @@ extern IMG_UINT32 g_ui32EveryLineCounter;
 			#define PDUMPMALLOCPAGETABLE(args...)
 			#define PDUMPSETMMUCONTEXT(args...)
 			#define PDUMPCLEARMMUCONTEXT(args...)
+            #define PDUMPPDDEVPADDR(args...)
 			#define PDUMPFREEPAGES(args...)
 			#define PDUMPFREEPAGETABLE(args...)
 			#define PDUMPPDREG(args...)

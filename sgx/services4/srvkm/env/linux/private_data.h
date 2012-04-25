@@ -65,5 +65,37 @@ typedef struct
 }
 PVRSRV_FILE_PRIVATE_DATA;
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+#include <linux/omap_drv.h>
+extern int pvr_mapper_id;
+static inline PVRSRV_FILE_PRIVATE_DATA * get_private(struct drm_file *file)
+{
+	return omap_drm_file_priv(file, pvr_mapper_id);
+}
+static inline void set_private(struct drm_file *file, PVRSRV_FILE_PRIVATE_DATA *priv)
+{
+	omap_drm_file_set_priv(file, pvr_mapper_id, priv);
+}
+#elif defined(SUPPORT_DRI_DRM)
+static inline PVRSRV_FILE_PRIVATE_DATA * get_private(struct drm_file *file)
+{
+	return file->driver_priv;
+}
+static inline void set_private(struct drm_file *file, PVRSRV_FILE_PRIVATE_DATA *priv)
+{
+	file->driver_priv = priv;
+}
+#else
+static inline PVRSRV_FILE_PRIVATE_DATA * get_private(struct file *file)
+{
+	return file->private_data;
+}
+static inline void set_private(struct file *file, PVRSRV_FILE_PRIVATE_DATA *priv)
+{
+	file->private_data = priv;
+}
+#endif
+
+
 #endif 
 

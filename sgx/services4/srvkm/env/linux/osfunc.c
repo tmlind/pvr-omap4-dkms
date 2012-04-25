@@ -362,6 +362,23 @@ OSMemHandleUnegisterSmart(IMG_VOID *hOSMemHandle, IMG_HANDLE hSmartCache)
 }
 
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+IMG_VOID
+OSMemHandleSetGEM(IMG_VOID *hOSMemHandle, IMG_HANDLE buf)
+{
+    LinuxMemArea *psLinuxMemArea = hOSMemHandle;
+    psLinuxMemArea->buf = buf;
+}
+
+IMG_HANDLE
+OSMemHandleGetGEM(IMG_VOID *hOSMemHandle)
+{
+    LinuxMemArea *psLinuxMemArea = hOSMemHandle;
+    return psLinuxMemArea->buf;
+}
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
+
 IMG_CPU_PHYADDR
 OSMemHandleToCpuPAddr(IMG_VOID *hOSMemHandle, IMG_UINT32 ui32ByteOffset)
 {

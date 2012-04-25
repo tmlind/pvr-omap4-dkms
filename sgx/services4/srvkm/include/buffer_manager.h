@@ -187,6 +187,13 @@ BM_RegisterSmart(BM_HANDLE hBuf, IMG_HANDLE hSmartCache);
 IMG_VOID
 BM_UnregisterSmart(BM_HANDLE hBuf, IMG_HANDLE hSmartCache);
 
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+IMG_VOID BM_SetGEM(BM_HANDLE hBuf, IMG_HANDLE buf);
+IMG_HANDLE BM_GetGEM(BM_HANDLE hBuf);
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
+
 IMG_CPU_VIRTADDR
 BM_HandleToCpuVaddr (BM_HANDLE hBuf);
 
@@ -230,6 +237,7 @@ PVRSRV_ERROR BM_XProcSetShareIndex(PXProcShareDataNode pShareDataNode);
 PVRSRV_ERROR BM_XProcFinishShareIndex(PXProcShareDataNode pShareDataNode, IMG_BOOL freeIfNotUsed);
 PXProcShareDataNode BM_XProcAllocNewBuffer(void);
 
+IMG_UINT32 BM_XProcWorkaroundGetRefCount(IMG_UINT32 ui32Index);
 
 #if defined(__cplusplus)
 }

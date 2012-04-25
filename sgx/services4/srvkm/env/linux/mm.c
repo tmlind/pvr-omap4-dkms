@@ -1262,12 +1262,20 @@ LinuxMemAreaStructAlloc(IMG_VOID)
 #endif
 }
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+#  include <linux/omap_drv.h>
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
+
 
 static IMG_VOID
 LinuxMemAreaStructFree(LinuxMemArea *psLinuxMemArea)
 {
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+	if (psLinuxMemArea->buf)
+		drm_gem_object_unreference_unlocked(psLinuxMemArea->buf);
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
     KMemCacheFreeWrapper(psLinuxMemAreaCache, psLinuxMemArea);
-    
+
     
 }
 
@@ -1427,6 +1435,10 @@ DebugLinuxMemAreaRecordRemove(LinuxMemArea *psLinuxMemArea)
 IMG_VOID *
 LinuxMemAreaToCpuVAddr(LinuxMemArea *psLinuxMemArea)
 {
+	if (!psLinuxMemArea)
+	{
+		return NULL;
+	}
     switch(psLinuxMemArea->eAreaType)
     {
         case LINUX_MEM_AREA_VMALLOC:
@@ -1454,9 +1466,12 @@ LinuxMemAreaToCpuVAddr(LinuxMemArea *psLinuxMemArea)
 IMG_CPU_PHYADDR
 LinuxMemAreaToCpuPAddr(LinuxMemArea *psLinuxMemArea, IMG_UINT32 ui32ByteOffset)
 {
-    IMG_CPU_PHYADDR CpuPAddr;
-    
-    CpuPAddr.uiAddr = 0;
+    IMG_CPU_PHYADDR CpuPAddr = {0};
+
+	if (!psLinuxMemArea)
+	{
+		return CpuPAddr;
+	}
 
     switch(psLinuxMemArea->eAreaType)
     {
