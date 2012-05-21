@@ -1,4 +1,4 @@
-pvr-omap4 (1.7.15.0.1.57-1linaro2) UNRELEASED; urgency=low
+pvr-omap4 (1.7.15.0.1.57-1linaro2) precise; urgency=low
 
   * Adding km-fix-failed-mmap-s-of-non-page-aligned-buffers.patch to the
     SGX kernel module (fix from TI)
