@@ -1,27 +1,44 @@
-#
-# Copyright (C) Imagination Technologies Ltd. All rights reserved.
+########################################################################### ###
+#@Title         Root makefile for OMAP4430 Linux.  Builds everything else.
+#@Copyright     Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+#@License       Dual MIT/GPLv2
 # 
-# This program is free software; you can redistribute it and/or modify it
-# under the terms and conditions of the GNU General Public License,
-# version 2, as published by the Free Software Foundation.
+# The contents of this file are subject to the MIT license as set out below.
 # 
-# This program is distributed in the hope it will be useful but, except 
-# as otherwise stated in writing, without any warranty; without even the 
-# implied warranty of merchantability or fitness for a particular purpose. 
-# See the GNU General Public License for more details.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 # 
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 # 
-# The full GNU General Public License is included in this distribution in
-# the file called "COPYING".
-#
-# Contact Information:
-# Imagination Technologies Ltd. <gpl-support@imgtec.com>
-# Home Park Estate, Kings Langley, Herts, WD4 8LZ, UK 
+# Alternatively, the contents of this file may be used under the terms of
+# the GNU General Public License Version 2 ("GPL") in which case the provisions
+# of GPL are applicable instead of those above.
 # 
-#
+# If you wish to allow use of your version of this file only under the terms of
+# GPL, and not to allow others to use your version of this file under the terms
+# of the MIT license, indicate your decision by deleting the provisions above
+# and replace them with the notice and other provisions required by GPL as set
+# out in the file called "GPL-COPYING" included in this distribution. If you do
+# not delete the provisions above, a recipient may use your version of this file
+# under the terms of either the MIT license or GPL.
+# 
+# This License is also included in this distribution in the file called
+# "MIT-COPYING".
+# 
+# EXCEPT AS OTHERWISE STATED IN A NEGOTIATED AGREEMENT: (A) THE SOFTWARE IS
+# PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+# BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+# PURPOSE AND NONINFRINGEMENT; AND (B) IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#   
+### ###########################################################################
 
 PVR_SYSTEM		:= omap4
 
@@ -99,6 +116,24 @@ SYS_CUSTOM_POWERLOCK_WRAP := 1
 ifeq ($(OMAP_KERNEL_AT_LEAST_2_6_35),1)
 ifeq ($(LDM_PLATFORM),1)
 PVR_LDM_PLATFORM_PRE_REGISTERED := 1
+ifeq ($(call kernel-version-at-least,2,6,35,7),true)
+# Not all variants of the OMAP4 kernel have a DRM based framebuffer.
+# Note that a non-X.Org version of the driver does not have to be built
+# with DRM support if the kernel has a DRM based framebuffer.
+PVR_OMAPLFB_DRM_FB ?= 1
+ifeq ($(PVR_OMAPLFB_DRM_FB),1)
+PVR_LDM_PLATFORM_PRE_REGISTERED_DEV := "\"pvrsrvkm_pvr\""
+# There is already a "pvrsrvkm" driver (part of the DRM framebuffer code),
+# so use the pre-registered device name instead.
+PVR_LDM_DRIVER_REGISTRATION_NAME := "\"pvrsrvkm_pvr"\"
+# The DRM library will not load the Services module on behalf of the X Server,
+# as a DRM module has already been loaded (the DRM based framebuffer), so
+# load the Services module before starting the X Server.
+XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
+else
+PVR_LDM_PLATFORM_PRE_REGISTERED_DEV := "\"pvrsrvkm\""
+endif
+endif
 endif
 endif
 
@@ -109,7 +144,7 @@ endif
 
 ifeq ($(want_xorg),1)
 
-ifeq ($(OMAP_KERNEL_AT_LEAST_2_6_35),1)
+ifeq ($(call kernel-version-at-least,2,6,35),true)
 PVR_DRI_DRM_PLATFORM_DEV := 1
 else
 PVR_DRI_DRM_NOT_PCI := 1
@@ -155,6 +190,8 @@ SUPPORT_V4L2_GFX ?= 0
 SUPPORT_MEMINFO_IDS ?= 1
 
 SUPPORT_MESA_SONAME ?= 1
+
+SUPPORT_MEMINFO_IDS ?= 1
 
 ifeq ($(SUPPORT_V4L2_GFX),1)
 KERNEL_COMPONENTS += v4l2-gfx

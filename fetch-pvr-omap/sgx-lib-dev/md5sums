@@ -8,11 +8,8 @@ ffd01f5ec1c582b9df88963dcc9e6df4  usr/include/EGL/eglplatform.h
 064b519cc50c09e0d121eeb30b0cef91  usr/include/GLES2/gl2ext.h
 3cc09f4be0daf2abdb1890fa3c8ba40c  usr/include/GLES2/gl2platform.h
 731ee537b1b898b582728e54e077ec27  usr/include/KHR/khrplatform.h
-e41dbb292b1578500963359ffaa3cade  usr/include/VG/openvg.h
-3ea9156dce7bb0031bfde53002d4d2d4  usr/include/VG/vgu.h
 c55edf0b8437bd024d73b333430ff4c1  usr/lib/pkgconfig/egl.pc
 4805ddb8cd48e49e2ebe0644eb5cef92  usr/lib/pkgconfig/glesv1_cm.pc
 4204e526e5f0f24ef1da9b3a224db869  usr/lib/pkgconfig/glesv2.pc
-186f92f5ffc0a088f42c6993214f27ff  usr/lib/pkgconfig/vg.pc
-9f363eab52c5763af2ce695e454aea8b  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
+0eeb3e149024ed7198f101ba23faa6f1  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
 542af8025bb26f9b36a120c00e319748  usr/share/doc/sgx-lib-dev/copyright

@@ -1,54 +1,67 @@
-#
-# Copyright (C) Imagination Technologies Ltd. All rights reserved.
+########################################################################### ###
+#@Title         Define global variables
+#@Copyright     Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+#@Description   This file is read once at the start of the build, after reading 
+#               in config.mk. It should define the non-MODULE_* variables used 
+#               in commands, like ALL_CFLAGS
+#@License       Dual MIT/GPLv2
 # 
-# This program is free software; you can redistribute it and/or modify it
-# under the terms and conditions of the GNU General Public License,
-# version 2, as published by the Free Software Foundation.
+# The contents of this file are subject to the MIT license as set out below.
 # 
-# This program is distributed in the hope it will be useful but, except 
-# as otherwise stated in writing, without any warranty; without even the 
-# implied warranty of merchantability or fitness for a particular purpose. 
-# See the GNU General Public License for more details.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 # 
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 # 
-# The full GNU General Public License is included in this distribution in
-# the file called "COPYING".
-#
-# Contact Information:
-# Imagination Technologies Ltd. <gpl-support@imgtec.com>
-# Home Park Estate, Kings Langley, Herts, WD4 8LZ, UK 
+# Alternatively, the contents of this file may be used under the terms of
+# the GNU General Public License Version 2 ("GPL") in which case the provisions
+# of GPL are applicable instead of those above.
 # 
-#
-
-#
-# This file is read once at the start of the build, after reading in
-# config.mk. It should define the non-MODULE_* variables used in commands,
-# like ALL_CFLAGS
-#
+# If you wish to allow use of your version of this file only under the terms of
+# GPL, and not to allow others to use your version of this file under the terms
+# of the MIT license, indicate your decision by deleting the provisions above
+# and replace them with the notice and other provisions required by GPL as set
+# out in the file called "GPL-COPYING" included in this distribution. If you do
+# not delete the provisions above, a recipient may use your version of this file
+# under the terms of either the MIT license or GPL.
+# 
+# This License is also included in this distribution in the file called
+# "MIT-COPYING".
+# 
+# EXCEPT AS OTHERWISE STATED IN A NEGOTIATED AGREEMENT: (A) THE SOFTWARE IS
+# PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+# BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+# PURPOSE AND NONINFRINGEMENT; AND (B) IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#   
+### ###########################################################################
 
 ifeq ($(BUILD),debug)
-COMMON_FLAGS := -Os
+COMMON_USER_FLAGS := -Os
 else
 OPTIM ?= -O2
-COMMON_FLAGS := $(OPTIM)
+COMMON_USER_FLAGS := $(OPTIM)
 endif
 
 # FIXME: We should probably audit the driver for aliasing
 #
-COMMON_FLAGS += -fno-strict-aliasing
+COMMON_USER_FLAGS += -fno-strict-aliasing
 
 # We always enable debugging. Either the release binaries are stripped
 # and the symbols put in the symbolpackage, or we're building debug.
 #
-COMMON_FLAGS += -g
+COMMON_USER_FLAGS += -g
 
 # These flags are used for kernel, User C and User C++
 #
-COMMON_FLAGS += \
- -W -Wall -Wno-missing-field-initializers -Wmissing-format-attribute
+COMMON_FLAGS = -W -Wall
 
 # Some GCC warnings are C only, so we must mask them from C++
 #
@@ -56,11 +69,16 @@ COMMON_CFLAGS := $(COMMON_FLAGS) \
  -Wdeclaration-after-statement -Wno-format-zero-length \
  -Wmissing-prototypes -Wstrict-prototypes
 
-# If we saw W=1, turn on some extra warnings.
-# Most of these flags are new, so cc-option check them.
+# Additional warnings, and optional warnings.
 #
+WARNING_CFLAGS := \
+ -Wpointer-arith -Wunused-parameter \
+ -Wmissing-format-attribute \
+ $(call cc-option,-Wno-missing-field-initializers) \
+ $(call cc-option,-fdiagnostics-show-option)
+
 ifeq ($(W),1)
-COMMON_CFLAGS += \
+WARNING_CFLAGS += \
  $(call cc-option,-Wbad-function-cast) \
  $(call cc-option,-Wcast-qual) \
  $(call cc-option,-Wcast-align) \
@@ -82,18 +100,84 @@ COMMON_CFLAGS += \
  $(call cc-option,-Wwrite-strings)
 endif
 
+WARNING_CFLAGS += \
+ $(call cc-optional-warning,-Wunused-but-set-variable)
+
+HOST_WARNING_CFLAGS := \
+ -Wpointer-arith -Wunused-parameter \
+ -Wmissing-format-attribute \
+ $(call host-cc-option,-Wno-missing-field-initializers) \
+ $(call host-cc-option,-fdiagnostics-show-option)
+
+ifeq ($(W),1)
+HOST_WARNING_CFLAGS += \
+ $(call host-cc-option,-Wbad-function-cast) \
+ $(call host-cc-option,-Wcast-qual) \
+ $(call host-cc-option,-Wcast-align) \
+ $(call host-cc-option,-Wconversion) \
+ $(call host-cc-option,-Wdisabled-optimization) \
+ $(call host-cc-option,-Wlogical-op) \
+ $(call host-cc-option,-Wmissing-declarations) \
+ $(call host-cc-option,-Wmissing-include-dirs) \
+ $(call host-cc-option,-Wnested-externs) \
+ $(call host-cc-option,-Wold-style-definition) \
+ $(call host-cc-option,-Woverlength-strings) \
+ $(call host-cc-option,-Wpacked) \
+ $(call host-cc-option,-Wpacked-bitfield-compat) \
+ $(call host-cc-option,-Wpadded) \
+ $(call host-cc-option,-Wredundant-decls) \
+ $(call host-cc-option,-Wshadow) \
+ $(call host-cc-option,-Wswitch-default) \
+ $(call host-cc-option,-Wvla) \
+ $(call host-cc-option,-Wwrite-strings)
+endif
+
+HOST_WARNING_CFLAGS += \
+ $(call host-cc-optional-warning,-Wunused-but-set-variable)
+
+KBUILD_WARNING_CFLAGS := \
+ -Wno-unused-parameter -Wno-sign-compare
+KBUILD_WARNING_CFLAGS += \
+ $(call kernel-cc-optional-warning,-Wbad-function-cast) \
+ $(call kernel-cc-optional-warning,-Wcast-qual) \
+ $(call kernel-cc-optional-warning,-Wcast-align) \
+ $(call kernel-cc-optional-warning,-Wconversion) \
+ $(call kernel-cc-optional-warning,-Wdisabled-optimization) \
+ $(call kernel-cc-optional-warning,-Wlogical-op) \
+ $(call kernel-cc-optional-warning,-Wmissing-declarations) \
+ $(call kernel-cc-optional-warning,-Wmissing-include-dirs) \
+ $(call kernel-cc-optional-warning,-Wnested-externs) \
+ $(call kernel-cc-optional-warning,-Wno-missing-field-initializers) \
+ $(call kernel-cc-optional-warning,-Wold-style-definition) \
+ $(call kernel-cc-optional-warning,-Woverlength-strings) \
+ $(call kernel-cc-optional-warning,-Wpacked) \
+ $(call kernel-cc-optional-warning,-Wpacked-bitfield-compat) \
+ $(call kernel-cc-optional-warning,-Wpadded) \
+ $(call kernel-cc-optional-warning,-Wredundant-decls) \
+ $(call kernel-cc-optional-warning,-Wshadow) \
+ $(call kernel-cc-optional-warning,-Wswitch-default) \
+ $(call kernel-cc-optional-warning,-Wvla) \
+ $(call kernel-cc-optional-warning,-Wwrite-strings)
+
 # User C only
 #
 ALL_CFLAGS := \
- $(COMMON_CFLAGS) -Wpointer-arith -Wunused-parameter $(SYS_CFLAGS)
+ $(COMMON_USER_FLAGS) $(COMMON_CFLAGS) $(WARNING_CFLAGS) \
+ $(SYS_CFLAGS)
+
 ALL_HOST_CFLAGS := \
- $(COMMON_CFLAGS) -Wpointer-arith -Wunused-parameter
+ $(COMMON_USER_FLAGS) $(COMMON_CFLAGS) $(HOST_WARNING_CFLAGS)
 
 # User C++ only
 #
 ALL_CXXFLAGS := \
- $(COMMON_FLAGS) -fno-rtti -fno-exceptions \
- -Wpointer-arith -Wunused-parameter $(SYS_CXXFLAGS)
+ $(COMMON_USER_FLAGS) $(COMMON_FLAGS) \
+ -fno-rtti -fno-exceptions \
+ -Wpointer-arith -Wunused-parameter \
+ $(SYS_CXXFLAGS)
+
+ALL_HOST_CXXFLAGS := \
+ $(COMMON_USER_FLAGS) $(COMMON_CFLAGS) -Wall
 
 # User C and C++
 #
@@ -118,9 +202,11 @@ ALL_LDFLAGS += $(SYS_LDFLAGS)
 
 # Kernel C only
 #
-ALL_KBUILD_CFLAGS := $(COMMON_CFLAGS) -Wno-unused-parameter -Wno-sign-compare \
- $(call cc-option,-Wno-type-limits) \
- $(call cc-option,-Wno-unused-but-set-variable)
+ALL_KBUILD_CFLAGS := $(COMMON_CFLAGS) $(KBUILD_WARNING_CFLAGS) \
+ $(call kernel-cc-option,-Wno-type-limits) \
+ $(call kernel-cc-option,-Wno-pointer-arith) \
+ $(call kernel-cc-option,-Wno-aggregate-return) \
+ $(call kernel-cc-option,-Wno-unused-but-set-variable)
 
 # This variable contains a list of all modules built by kbuild
 ALL_KBUILD_MODULES :=
