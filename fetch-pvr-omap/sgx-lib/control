@@ -1,18 +1,18 @@
 Package: sgx-lib
-Version: 1.7.15.0.1-1glp57
+Version: 1.9.0.4.1-1glp1
 Architecture: armhf
 Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
-Installed-Size: 2243
-Depends: libc6 (>= 2.15-0ubuntu8), libdri2-1 (>= 1.0.0), libdrm-omap1 (>= 2.4.26), libdrm2 (>= 2.3.1), libgcc1 (>= 1:4.4.0), libstdc++6 (>= 4.1.1), libx11-6, libxfixes3, sgx-lib-data (= 1.7.15.0.1-1glp57)
+Installed-Size: 1879
+Depends: libc6 (>= 2.15-0ubuntu8), libdri2-1 (>= 1.0.2-0ubuntu3), libdrm-omap1 (>= 2.4.32-1ubuntu1+ti3.0), libdrm2 (>= 2.3.1), libgcc1 (>= 1:4.4.0), libstdc++6 (>= 4.1.1), libx11-6, libxfixes3, sgx-lib-data (= 1.9.0.4.1-1glp1), libpixman-1-0
 Suggests: sgx-lib-doc
-Conflicts: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, libopenvg1, libopenvg1-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
-Replaces: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, libopenvg1, libopenvg1-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
-Provides: libegl1-x11, libgles1, libgles2, libopenvg1
+Conflicts: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
+Replaces: libegl1-sgx-omap4, libegl1-x11, libgles1, libgles1-sgx-omap4, libgles2, libgles2-sgx-omap4, pvr-omap4, pvr-omap4-utils, sgx-lib-noxws, xf86-video-v4l2
+Provides: libegl1-x11, libgles1, libgles2
 Section: graphics
 Priority: extra
 Homepage: https://gforge01.dal.design.ti.com/gf/project/gfx_l24_ddk2/
 Description: SGX540 libraries for OMAP4
  SGX540 (PowerVR) Linux libraries for OMAP4.
  .
- This comprises libraries for OpenGL ES 1.1, 2.0,
- OpenVG and test applications.
+ This comprises libraries for OpenGL ES 1.1, 2.0
+ and test applications.

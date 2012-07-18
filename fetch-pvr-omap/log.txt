@@ -1,12 +1,12 @@
 fetch-pvr-omap
-Thu Apr 19 17:01:30 UTC 2012
+Wed Jul  4 17:29:34 CEST 2012
 ===
 
 "Fetched" packages:
 
-- sgx-lib_1.7.15.0.1-1glp57_armhf.deb
-- sgx-lib-data_1.7.15.0.1-1glp57_all.deb
-- sgx-lib-dev_1.7.15.0.1-1glp57_armhf.deb
-- xserver-xorg-video-omap-pvr_0.1.0-0ubuntu1_armhf.deb
-- xserver-xorg-video-omap-pvr-dbg_0.1.0-0ubuntu1_armhf.deb
-- sgx-lib-dbgsym_1.7.15.0.1-1glp57_armhf.ddeb
+- sgx-lib_1.9.0.4.1-1glp1_armhf.deb
+- sgx-lib-data_1.9.0.4.1-1glp1_all.deb
+- sgx-lib-dev_1.9.0.4.1-1glp1_armhf.deb
+- xserver-xorg-video-omap-pvr_0.3.2-0ubuntu1_armhf.deb
+- xserver-xorg-video-omap-pvr-dbg_0.3.2-0ubuntu1_armhf.deb
+- sgx-lib-dbgsym_1.9.0.4.1-1glp1_armhf.ddeb
