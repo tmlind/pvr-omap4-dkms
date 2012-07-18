@@ -18,7 +18,7 @@ Homepage: https://launchpad.net/~tiomap-dev/+archive/release
 Package: pvr-omap4
 Architecture: armhf
 Depends: dkms (>= 1.95), make, coreutils (>= 8.5),
-         grep (>= 2.6.3), dos2unix, linux-headers-omap4,
+         grep (>= 2.6.3), dos2unix,
          ${xviddriver:Depends}, ${misc:Depends}, ${shlibs:Depends}
 Description: PowerVR SGX540 libraries for OMAP4, libs and drivers.
  PowerVR SGX540 Linux libraries for OMAP4.

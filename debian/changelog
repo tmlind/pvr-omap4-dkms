@@ -1,3 +1,9 @@
+pvr-omap4 (1.9.0.4.1.1-0linaro1) precise; urgency=low
+
+  * New upstream release
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@linaro.org>  Wed, 18 Jul 2012 02:09:52 -0300
+
 pvr-omap4 (1.7.15.0.1.57-1linaro2) precise; urgency=low
 
   * Adding km-fix-failed-mmap-s-of-non-page-aligned-buffers.patch to the

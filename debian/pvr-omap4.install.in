@@ -17,3 +17,4 @@ usr/lib/lib*.so*	#PKGLIBDIR#
 
 # Xorg Driver
 usr/lib/xorg		#PKGLIBDIR#
+usr/share/X11/xorg.conf.d
