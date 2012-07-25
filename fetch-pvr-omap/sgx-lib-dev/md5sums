@@ -11,5 +11,5 @@ ffd01f5ec1c582b9df88963dcc9e6df4  usr/include/EGL/eglplatform.h
 c55edf0b8437bd024d73b333430ff4c1  usr/lib/pkgconfig/egl.pc
 4805ddb8cd48e49e2ebe0644eb5cef92  usr/lib/pkgconfig/glesv1_cm.pc
 4204e526e5f0f24ef1da9b3a224db869  usr/lib/pkgconfig/glesv2.pc
-0eeb3e149024ed7198f101ba23faa6f1  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
+15918f54d0121fe351a1e1543ad98b85  usr/share/doc/sgx-lib-dev/changelog.Debian.gz
 542af8025bb26f9b36a120c00e319748  usr/share/doc/sgx-lib-dev/copyright
