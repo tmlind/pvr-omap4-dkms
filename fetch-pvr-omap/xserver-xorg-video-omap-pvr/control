@@ -1,6 +1,6 @@
 Package: xserver-xorg-video-omap-pvr
 Source: xf86-video-omap-pvr
-Version: 0.3.2-0ubuntu1
+Version: 0.3.4-0ubuntu1
 Architecture: armhf
 Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
 Installed-Size: 100
