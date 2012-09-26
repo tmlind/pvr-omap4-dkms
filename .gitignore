@@ -1,0 +1,24 @@
+# Build results.
+*.o
+*.o.cmd
+*.ko
+*.ko.cmd
+*.mod.c
+.tmp_versions/
+Module.symvers
+modules.order
+/eurasiacon/binary_omap4430_linux_release/
+
+# Quilt.
+/.pc/
+
+# Dpkg.
+/debian/tmp/
+/debian/stamp-*
+/debian/sgx-*/
+/debian/files
+/debian/*.debhelper.log
+/debian/*.substvars
+
+# More files tracked as patches.
+/sgx/services4/include/drivers-video-omap2-omapfb.h

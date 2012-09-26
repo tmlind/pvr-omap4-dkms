@@ -1,0 +1,39 @@
+Source: pvr-omap4-dkms
+Section: graphics
+Priority: optional
+Maintainer: TI OMAP Developers <tiomap-dev@lists.launchpad.net>
+Build-Depends: cdbs, debhelper (>= 7), quilt, dkms
+Standards-Version: 3.9.1
+Homepage: https://gerrit.ext.ti.com/gerrit/omap/gitweb?p=img-ddk-linux-xorg.git;a=summary
+
+Package: pvr-omap4-dkms
+Architecture: armhf
+Section: kernel
+Depends: dkms (>= 1.95), make, ${misc:Depends}, linux-headers-ti-omap4 | linux-headers-omap4, coreutils, grep, bash, dos2unix
+Conflicts: pvr-omap4-debug-dkms
+Replaces: pvr-omap4-debug-dkms
+Description: PowerVR SGX540 kernel driver for OMAP4 in DKMS format.
+ This package provides the source code for the PowerVR SGX540 OMAP4
+ kernel module.
+ .
+ This driver will allow usage of the OpenGLES SGX libraries, providing
+ 3D acceleration. Kernel source or headers are required to compile these
+ modules.
+ .
+ This package contains the source to be built with dkms.
+
+Package: pvr-omap4-debug-dkms
+Architecture: armhf
+Section: kernel
+Depends: dkms (>= 1.95), make, ${misc:Depends}, linux-headers-ti-omap4 | linux-headers-omap4, coreutils, grep, bash, dos2unix
+Conflicts: pvr-omap4-dkms
+Replaces: pvr-omap4-dkms
+Description: PowerVR SGX540 kernel driver for OMAP4 in DKMS format, in debug mode.
+ This package provides the source code for the PowerVR SGX540 OMAP4
+ kernel module.
+ .
+ This driver will allow usage of the OpenGLES SGX libraries, providing
+ 3D acceleration. Kernel source or headers are required to compile these
+ modules.
+ .
+ This package contains the source to be built with dkms in debug mode.

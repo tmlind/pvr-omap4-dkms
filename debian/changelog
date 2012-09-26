@@ -1,0 +1,5 @@
+pvr-omap4-dkms (1.9.0.6.1.1-1) precise; urgency=low
+
+  * New sgx-lib version 1.9.0.6.1-1glp1
+
+ -- Xavier Boudet <x-boudet@ti.com>  Tue, 18 Sep 2012 11:56:45 +0200
