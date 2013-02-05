@@ -1,0 +1,26 @@
+From bef846fd2eb0b36f25b5f0a72a568faed9459945 Mon Sep 17 00:00:00 2001
+From: Xavier Boudet <x-boudet@ti.com>
+Date: Tue, 5 Feb 2013 19:37:51 +0100
+Subject: [PATCH 2/4] Revert "No more __devinitdata in v3.8"
+
+This reverts commit 82ea099e14b2798d8f4dd337b1088f4650366648.
+---
+ sgx/services4/srvkm/env/linux/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sgx/services4/srvkm/env/linux/module.c b/sgx/services4/srvkm/env/linux/module.c
+index e071749..eb99ca9 100644
+--- a/sgx/services4/srvkm/env/linux/module.c
++++ b/sgx/services4/srvkm/env/linux/module.c
+@@ -255,7 +255,7 @@ MODULE_DEVICE_TABLE(pci, powervr_id_table);
+ #endif
+ 
+ #if defined(PVR_USE_PRE_REGISTERED_PLATFORM_DEV)
+-static struct platform_device_id powervr_id_table[] = {
++static struct platform_device_id powervr_id_table[] __devinitdata = {
+ 	{SYS_SGX_DEV_NAME, 0},
+ 	{}
+ };
+-- 
+1.7.9.5
+

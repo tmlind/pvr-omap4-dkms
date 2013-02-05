@@ -1,0 +1,40 @@
+From d99a068411a10aa1b7c8da5fd3f7c6d7c9dcd687 Mon Sep 17 00:00:00 2001
+From: Xavier Boudet <x-boudet@ti.com>
+Date: Tue, 5 Feb 2013 19:38:17 +0100
+Subject: [PATCH 4/4] Revert "Fix use of VM_RESERVED for kernel 3.7"
+
+This reverts commit d4aca24d25d67634b61cf028234df61415de59bf.
+---
+ sgx/services4/srvkm/env/linux/mmap.c   |    2 +-
+ sgx/services4/srvkm/env/linux/osfunc.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sgx/services4/srvkm/env/linux/mmap.c b/sgx/services4/srvkm/env/linux/mmap.c
+index 0bf8e80..4055e9b 100644
+--- a/sgx/services4/srvkm/env/linux/mmap.c
++++ b/sgx/services4/srvkm/env/linux/mmap.c
+@@ -1213,7 +1213,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
+     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
+          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
+ 
+-    ps_vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
++    ps_vma->vm_flags |= VM_RESERVED;
+     ps_vma->vm_flags |= VM_IO;
+ 
+     /*
+diff --git a/sgx/services4/srvkm/env/linux/osfunc.c b/sgx/services4/srvkm/env/linux/osfunc.c
+index 20b8cfb..8e4b2e3 100644
+--- a/sgx/services4/srvkm/env/linux/osfunc.c
++++ b/sgx/services4/srvkm/env/linux/osfunc.c
+@@ -3718,7 +3718,7 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
+     }
+ 
+     /* Does the region represent memory mapped I/O? */
+-    if ((psVMArea->vm_flags & (VM_IO | VM_DONTEXPAND | VM_DONTDUMP)) != (VM_IO | VM_DONTEXPAND | VM_DONTDUMP))
++    if ((psVMArea->vm_flags & (VM_IO | VM_RESERVED)) != (VM_IO | VM_RESERVED))
+     {
+         PVR_DPF((PVR_DBG_ERROR,
+             "OSAcquirePhysPageAddr: Memory region does not represent memory mapped I/O (VMA flags: 0x%lx)", psVMArea->vm_flags));
+-- 
+1.7.9.5
+

@@ -1,0 +1,27 @@
+From e27a733ae05597905c4c45214d638ea49a65a72e Mon Sep 17 00:00:00 2001
+From: Xavier Boudet <x-boudet@ti.com>
+Date: Tue, 5 Feb 2013 19:37:42 +0100
+Subject: [PATCH 1/4] Revert "SGX-KM: (HACK) Disable burst combiner"
+
+This reverts commit a26f9e4df04559e70676e4ddff55dc299119a468.
+---
+ sgx/services4/srvkm/hwdefs/sgxerrata.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/sgx/services4/srvkm/hwdefs/sgxerrata.h b/sgx/services4/srvkm/hwdefs/sgxerrata.h
+index d8a1fb8..711e356 100644
+--- a/sgx/services4/srvkm/hwdefs/sgxerrata.h
++++ b/sgx/services4/srvkm/hwdefs/sgxerrata.h
+@@ -421,8 +421,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 		#if defined(SUPPORT_SGX_LOW_LATENCY_SCHEDULING) && defined(SGX_FEATURE_MP)
+ 			#define FIX_HW_BRN_33657/* workaround in ukernel */
+ 		#endif
+-		//FIXME: This causes DMM/EMIF lockup
+-		//#define FIX_HW_BRN_33809/* workaround in kernel (enable burst combiner) */
++		#define FIX_HW_BRN_33809/* workaround in kernel (enable burst combiner) */
+ 		#define FIX_HW_BRN_36513 /* workaround in uKernel and Services */
+ 	#else
+ 	#if SGX_CORE_REV == SGX_CORE_REV_HEAD
+-- 
+1.7.9.5
+

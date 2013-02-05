@@ -1,0 +1,82 @@
+From 333ec3f176e853cb292ff607db89a0255febcb79 Mon Sep 17 00:00:00 2001
+From: Xavier Boudet <x-boudet@ti.com>
+Date: Tue, 5 Feb 2013 19:38:05 +0100
+Subject: [PATCH 3/4] Revert "Hack include paths to fix compilation with v3.8"
+
+This reverts commit 98835896346539f1515d41bd72164d48a100d661.
+---
+ sgx/services4/srvkm/common/devicemem.c      |    2 +-
+ sgx/services4/srvkm/env/linux/mm.c          |    2 +-
+ sgx/services4/srvkm/env/linux/mmap.c        |    2 +-
+ .../services4/srvkm/env/linux/private_data.h       |    2 +-
+ sgx/services4/system/omap5/sysutils_linux.c |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/sgx/services4/srvkm/common/devicemem.c b/sgx/services4/srvkm/common/devicemem.c
+index 34cccdd..ba3997d 100644
+--- a/sgx/services4/srvkm/common/devicemem.c
++++ b/sgx/services4/srvkm/common/devicemem.c
+@@ -60,7 +60,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #endif
+ 
+ #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+-#  include "../drivers/staging/omapdrm/omap_drv.h"
++#  include <linux/omap_drv.h>
+ #  include "perproc.h"
+ #  include "env_perproc.h"
+ extern int pvr_mapper_id;
+diff --git a/sgx/services4/srvkm/env/linux/mm.c b/sgx/services4/srvkm/env/linux/mm.c
+index 28a0e8b..f60502d 100644
+--- a/sgx/services4/srvkm/env/linux/mm.c
++++ b/sgx/services4/srvkm/env/linux/mm.c
+@@ -1771,7 +1771,7 @@ LinuxMemAreaStructAlloc(IMG_VOID)
+ }
+ 
+ #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+-#  include "../drivers/staging/omapdrm/omap_drv.h"
++#  include <linux/omap_drv.h>
+ #endif /* SUPPORT_DRI_DRM_EXTERNAL */
+ 
+ 
+diff --git a/sgx/services4/srvkm/env/linux/mmap.c b/sgx/services4/srvkm/env/linux/mmap.c
+index ec86d9e..0bf8e80 100644
+--- a/sgx/services4/srvkm/env/linux/mmap.c
++++ b/sgx/services4/srvkm/env/linux/mmap.c
+@@ -365,7 +365,7 @@ DetermineUsersSizeAndByteOffset(LinuxMemArea *psLinuxMemArea,
+ }
+ 
+ #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+-#include "../drivers/staging/omapdrm/omap_drv.h"
++#include <linux/omap_drv.h>
+ #include "syscommon.h"
+ static struct omap_gem_vm_ops gem_ops;
+ static struct drm_gem_object *
+diff --git a/sgx/services4/srvkm/env/linux/private_data.h b/sgx/services4/srvkm/env/linux/private_data.h
+index b3c1498..10c6b84 100644
+--- a/sgx/services4/srvkm/env/linux/private_data.h
++++ b/sgx/services4/srvkm/env/linux/private_data.h
+@@ -92,7 +92,7 @@ typedef struct
+ PVRSRV_FILE_PRIVATE_DATA;
+ 
+ #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+-#include "../drivers/staging/omapdrm/omap_drv.h"
++#include <linux/omap_drv.h>
+ extern int pvr_mapper_id;
+ static inline PVRSRV_FILE_PRIVATE_DATA * get_private(struct drm_file *file)
+ {
+diff --git a/sgx/services4/system/omap5/sysutils_linux.c b/sgx/services4/system/omap5/sysutils_linux.c
+index 54a99cf..704b6eb 100644
+--- a/sgx/services4/system/omap5/sysutils_linux.c
++++ b/sgx/services4/system/omap5/sysutils_linux.c
+@@ -57,7 +57,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+-#include "../arch/arm/mach-omap2/omap_device.h"
++#include <plat/omap_device.h>
+ 
+ #if defined(SYS_OMAP5_HAS_DVFS_FRAMEWORK)
+ #include <linux/opp.h>
+-- 
+1.7.9.5
+

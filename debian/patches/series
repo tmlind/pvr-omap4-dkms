@@ -1,1 +1,5 @@
 0001-core-mk-fix.patch
+0001-Revert-SGX-KM-HACK-Disable-burst-combiner.patch
+0002-Revert-No-more-__devinitdata-in-v3.8.patch
+0003-Revert-Hack-include-paths-to-fix-compilation-with-v3.patch
+0004-Revert-Fix-use-of-VM_RESERVED-for-kernel-3.7.patch
