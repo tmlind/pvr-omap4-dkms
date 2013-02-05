@@ -365,7 +365,7 @@ DetermineUsersSizeAndByteOffset(LinuxMemArea *psLinuxMemArea,
 }
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-#include <linux/omap_drv.h>
+#include "../drivers/staging/omapdrm/omap_drv.h"
 #include "syscommon.h"
 static struct omap_gem_vm_ops gem_ops;
 static struct drm_gem_object *
@@ -517,7 +517,7 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 	struct drm_gem_object *buf = NULL;
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     PVR_ASSERT(PVRSRVGetMaxHandle(psPerProc->psHandleBase) <= MAX_MMAP_HANDLE);
 
@@ -694,7 +694,7 @@ PVRMMapReleaseMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
     PVRSRV_ERROR eError;
     IMG_UINT32 ui32PID = OSGetCurrentProcessIDKM();
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     PVR_ASSERT(PVRSRVGetMaxHandle(psPerProc->psHandleBase) <= MAX_MMAP_HANDLE);
 
@@ -1003,7 +1003,7 @@ MMapVOpenNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct)
 static void
 MMapVOpen(struct vm_area_struct* ps_vma)
 {
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     MMapVOpenNoLock(ps_vma, ps_vma->vm_private_data);
 
@@ -1050,7 +1050,7 @@ MMapVCloseNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct
 static void
 MMapVClose(struct vm_area_struct* ps_vma)
 {
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     MMapVCloseNoLock(ps_vma, ps_vma->vm_private_data);
 
@@ -1072,7 +1072,7 @@ static int MMapVAccess(struct vm_area_struct *ps_vma, unsigned long addr,
 	int iRetVal = -EINVAL;
 	IMG_VOID *pvKernelAddr;
 
-	LinuxLockMutex(&g_sMMapMutex);
+	LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
 	psOffsetStruct = (PKV_OFFSET_STRUCT)ps_vma->vm_private_data;
 	psLinuxMemArea = psOffsetStruct->psLinuxMemArea;
@@ -1158,7 +1158,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 
     PVR_UNREFERENCED_PARAMETER(pFile);
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
     
     ui32ByteSize = ps_vma->vm_end - ps_vma->vm_start;
     
@@ -1213,7 +1213,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
-    ps_vma->vm_flags |= VM_RESERVED;
+    ps_vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
     ps_vma->vm_flags |= VM_IO;
 
     /*
@@ -1436,7 +1436,7 @@ static void ProcSeqStartstopMMapRegistations(struct seq_file *sfile,IMG_BOOL sta
 {
 	if(start) 
 	{
-	    LinuxLockMutex(&g_sMMapMutex);		
+	    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);		
 	}
 	else
 	{
@@ -1598,7 +1598,7 @@ PVRMMapRegisterArea(LinuxMemArea *psLinuxMemArea)
     (void)pszName; /* Ignore fatal warning. */
 #endif
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
 #if defined(DEBUG) || defined(DEBUG_LINUX_MMAP_AREAS)
     PVR_DPF((PVR_DBG_MESSAGE,
@@ -1663,7 +1663,7 @@ PVRMMapRemoveRegisteredArea(LinuxMemArea *psLinuxMemArea)
     PVRSRV_ERROR eError;
     PKV_OFFSET_STRUCT psOffsetStruct, psTmpOffsetStruct;
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     PVR_ASSERT(psLinuxMemArea->bMMapRegistered);
 
@@ -1756,7 +1756,7 @@ LinuxMMapPerProcessDisconnect(PVRSRV_ENV_PER_PROCESS_DATA *psEnvPerProc)
 
     PVR_UNREFERENCED_PARAMETER(psEnvPerProc);
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     list_for_each_entry_safe(psOffsetStruct, psTmpOffsetStruct, &g_sMMapOffsetStructList, sMMapItem)
     {

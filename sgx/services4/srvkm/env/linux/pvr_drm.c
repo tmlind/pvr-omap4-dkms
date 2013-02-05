@@ -317,7 +317,7 @@ PVRDRMUnprivCmd(struct drm_device *dev, void *arg, struct drm_file *pFile)
 {
 	int ret = 0;
 
-	LinuxLockMutex(&gPVRSRVLock);
+	LinuxLockMutexNested(&gPVRSRVLock, PVRSRV_LOCK_CLASS_BRIDGE);
 
 	if (arg == NULL)
 	{
@@ -352,7 +352,7 @@ PVRDRM_Display_ioctl(struct drm_device *dev, void *arg, struct drm_file *pFile)
 {
 	int res;
 
-	LinuxLockMutex(&gPVRSRVLock);
+	LinuxLockMutexNested(&gPVRSRVLock, PVRSRV_LOCK_CLASS_BRIDGE);
 
 	res = PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _Ioctl)(dev, arg, pFile);
 

@@ -60,7 +60,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-#  include <linux/omap_drv.h>
+#  include "../drivers/staging/omapdrm/omap_drv.h"
 #  include "perproc.h"
 #  include "env_perproc.h"
 extern int pvr_mapper_id;
@@ -1750,6 +1750,18 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVWrapExtMemoryKM(IMG_HANDLE				hDevCookie,
   		   we shouldn't trust what the user says here
   		*/
 		bPhysContig = IMG_FALSE;
+	}
+	else
+	{
+		if (psExtSysPAddr)
+		{
+			PVR_DPF((PVR_DBG_ERROR, "PVRSRVWrapExtMemoryKM: invalid parameter, physical address passing is not supported"));
+		}
+		else
+		{
+			PVR_DPF((PVR_DBG_ERROR, "PVRSRVWrapExtMemoryKM: invalid parameter, no address specificed"));
+		}
+		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
 	/* Choose the heap to map to */

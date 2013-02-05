@@ -3718,7 +3718,7 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
     }
 
     /* Does the region represent memory mapped I/O? */
-    if ((psVMArea->vm_flags & (VM_IO | VM_RESERVED)) != (VM_IO | VM_RESERVED))
+    if ((psVMArea->vm_flags & (VM_IO | VM_DONTEXPAND | VM_DONTDUMP)) != (VM_IO | VM_DONTEXPAND | VM_DONTDUMP))
     {
         PVR_DPF((PVR_DBG_ERROR,
             "OSAcquirePhysPageAddr: Memory region does not represent memory mapped I/O (VMA flags: 0x%lx)", psVMArea->vm_flags));
@@ -4016,7 +4016,7 @@ IMG_BOOL CheckExecuteCacheOp(IMG_HANDLE hOSMemHandle,
 
 	PVR_ASSERT(psLinuxMemArea != IMG_NULL);
 
-	LinuxLockMutex(&g_sMMapMutex);
+	LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
 	psMMapOffsetStructList = &psLinuxMemArea->sMMapOffsetStructList;
 	ui32AreaLength = psLinuxMemArea->ui32ByteSize;
@@ -4555,7 +4555,7 @@ IMG_VOID OSReleaseBridgeLock(IMG_VOID)
 
 IMG_VOID OSReacquireBridgeLock(IMG_VOID)
 {
-       LinuxLockMutex(&gPVRSRVLock);
+       LinuxLockMutexNested(&gPVRSRVLock, PVRSRV_LOCK_CLASS_BRIDGE);
 }
 
 typedef struct _OSTime
@@ -4573,7 +4573,7 @@ PVRSRV_ERROR OSTimeCreateWithUSOffset(IMG_PVOID *pvRet, IMG_UINT32 ui32USOffset)
 		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
 
-	psOSTime->ulTime = usecs_to_jiffies(jiffies_to_usecs(jiffies) + ui32USOffset);
+	psOSTime->ulTime = jiffies + usecs_to_jiffies(ui32USOffset);
 	*pvRet = psOSTime;
 	return PVRSRV_OK;
 }
