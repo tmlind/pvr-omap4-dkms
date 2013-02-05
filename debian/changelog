@@ -1,3 +1,9 @@
+pvr-omap4-dkms (1.9.0.8.1.1-2) precise; urgency=low
+
+  * Remove Kernel 3.7/8 patches
+
+ -- Xavier Boudet <x-boudet@ti.com>  Tue, 05 Feb 2013 19:43:06 +0100
+
 pvr-omap4-dkms (1.9.0.8.1.1-1) precise; urgency=low
 
   * New sgx-lib version 1.9.0.8.1-2glp1
