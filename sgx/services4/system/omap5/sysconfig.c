@@ -292,6 +292,8 @@ static IMG_CHAR *SysCreateVersionString(void)
 
 #if SGX_CORE_REV == 105
        ui32SGXRevision = 0x10005;
+#elif SGX_CORE_REV == 116
+       ui32SGXRevision = 0x10106;
 #else
 	ui32SGXRevision = OSReadHWReg((IMG_PVOID)((IMG_PBYTE)pvRegsLinAddr),
 								  EUR_CR_CORE_REVISION);
