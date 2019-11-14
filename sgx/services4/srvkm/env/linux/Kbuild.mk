@@ -150,9 +150,11 @@ endif
 ifeq ($(SUPPORT_DRI_DRM),1)
 
 $(PVRSRV_MODNAME)-y += \
- services4/srvkm/env/linux/pvr_drm.o
+ pvr-drv.o \
+ pvr-omap.o
 
 ccflags-y += \
+ -I$(TOP) \
  -I$(KERNELDIR)/include/drm \
  -I$(KERNELDIR)/drivers/staging/omapdrm \
  -I$(KERNELDIR)/include/linux \
