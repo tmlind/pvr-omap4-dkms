@@ -3302,10 +3302,12 @@ PVRSRV_ERROR OSCopyFromUser( IMG_PVOID pvProcess,
  @Return   IMG_BOOL :
 
 ******************************************************************************/
-IMG_BOOL OSAccessOK(IMG_VERIFY_TEST eVerification, IMG_VOID *pvUserPtr, IMG_UINT32 ui32Bytes)
+IMG_BOOL OSAccessOK(IMG_VERIFY_TEST eVerification, IMG_VOID *pvUserPtr, IMG_SIZE_T uiBytes)
 {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0))
+    return access_ok(pvUserPtr, uiBytes);
+#else
     IMG_INT linuxType;
-
     if (eVerification == PVR_VERIFY_READ)
     {
         linuxType = VERIFY_READ;
@@ -3316,7 +3318,8 @@ IMG_BOOL OSAccessOK(IMG_VERIFY_TEST eVerification, IMG_VOID *pvUserPtr, IMG_UINT
         linuxType = VERIFY_WRITE;
     }
 
-    return access_ok(linuxType, pvUserPtr, ui32Bytes);
+    return access_ok(linuxType, pvUserPtr, uiBytes);
+#endif
 }
 
 typedef enum _eWrapMemType_

@@ -875,7 +875,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
         IMG_UINT32 ulVMAPos;
 	IMG_UINT32 ui32ByteEnd = ui32ByteOffset + ui32ByteSize;
 	IMG_UINT32 ui32PA;
-	IMG_UINT32 ui32AdjustedPA = ui32ByteOffset;
+	IMG_UINT32 uiAdjustedPA = ui32ByteOffset;
 #if defined(PVR_MAKE_ALL_PFNS_SPECIAL)
 	IMG_BOOL bMixedMap = IMG_FALSE;
 #endif
@@ -895,7 +895,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 
 		if (bMapPage)
 		{
-			pfn =  LinuxMemAreaToCpuPFN(psLinuxMemArea, ui32AdjustedPA);
+			pfn =  LinuxMemAreaToCpuPFN(psLinuxMemArea, uiAdjustedPA);
 			if (!pfn_valid(pfn))
 			{
 #if !defined(PVR_MAKE_ALL_PFNS_SPECIAL)
@@ -905,7 +905,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 			bMixedMap = IMG_TRUE;
 #endif
 			}
-			ui32AdjustedPA += PAGE_SIZE;
+			uiAdjustedPA += PAGE_SIZE;
 		}
 	}
 
@@ -917,7 +917,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 #endif
 	/* Second pass, get the page structures and insert the pages */
         ulVMAPos = ps_vma->vm_start;
-        ui32AdjustedPA = ui32ByteOffset;
+        uiAdjustedPA = ui32ByteOffset;
 	for(ui32PA = ui32ByteOffset; ui32PA < ui32ByteEnd; ui32PA += PAGE_SIZE)
 	{
 	    IMG_UINT32 pfn;
@@ -935,22 +935,31 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 
 		if (bMapPage)
 		{
-			pfn =  LinuxMemAreaToCpuPFN(psLinuxMemArea, ui32AdjustedPA);
+			pfn =  LinuxMemAreaToCpuPFN(psLinuxMemArea, uiAdjustedPA);
 
 #if defined(PVR_MAKE_ALL_PFNS_SPECIAL)
 		    if (bMixedMap)
 		    {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
+			result = vmf_insert_mixed(ps_vma, ulVMAPos, pfn_to_pfn_t(pfn));
+	                if(result != 0)
+	                {
+	                    PVR_DPF((PVR_DBG_ERROR,"%s: Error - vmf_insert_mixed failed (%x)", __FUNCTION__, result));
+	                    return IMG_FALSE;
+	                }
+#else
 			result = vm_insert_mixed(ps_vma, ulVMAPos, pfn_to_pfn_t(pfn));
 	                if(result != 0)
 	                {
 	                    PVR_DPF((PVR_DBG_ERROR,"%s: Error - vm_insert_mixed failed (%d)", __FUNCTION__, result));
 	                    return IMG_FALSE;
 	                }
+#endif
 		    }
 		    else
 #endif
 		    {
-			struct page *psPage;
+				struct page *psPage;
 	
 		        PVR_ASSERT(pfn_valid(pfn));
 	
@@ -963,7 +972,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 	                    return IMG_FALSE;
 	                }
 		    }
-		    ui32AdjustedPA += PAGE_SIZE;
+		    uiAdjustedPA += PAGE_SIZE;
 		}
         ulVMAPos += PAGE_SIZE;
     }
@@ -1221,7 +1230,12 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
-    ps_vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0))
+    /* This is probably superfluous and implied by VM_IO */
+    ps_vma->vm_flags |= VM_RESERVED;
+#else
+    ps_vma->vm_flags |= VM_DONTDUMP;
+#endif
     ps_vma->vm_flags |= VM_IO;
 
     /*
