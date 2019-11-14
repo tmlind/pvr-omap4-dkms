@@ -47,7 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #endif
 
-#if defined(SUPPORT_DRI_DRM) && !defined(SUPPORT_DRI_DRM_EXTERNAL)
+#if defined(SUPPORT_DRI_DRM)
 #define	PVR_MOD_STATIC
 #else
 	/*
@@ -77,10 +77,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #endif
 
-#if defined(PVR_LDM_PLATFORM_PRE_REGISTERED)
-#if !defined(NO_HARDWARE)
+#if (defined(PVR_LDM_PLATFORM_PRE_REGISTERED) || defined(PVR_LDM_DEVICE_TREE)) && !defined(NO_HARDWARE)
 #define PVR_USE_PRE_REGISTERED_PLATFORM_DEV
 #endif
+
+#if defined(PVR_LDM_DEVICE_TREE) && !defined(NO_HARDWARE)
+#define PVR_USE_DEVICE_TREE
+#include <linux/mod_devicetable.h>
 #endif
 
 #include <linux/init.h>
@@ -261,7 +264,6 @@ static struct platform_device_id powervr_id_table[] = {
 };
 #endif
 
-#if defined(SUPPORT_DRI_DRM_EXTERNAL) || !defined(SUPPORT_DRI_DRM)
 static LDM_DRV powervr_driver = {
 #if defined(PVR_LDM_PLATFORM_MODULE)
 	.driver = {
@@ -271,7 +273,7 @@ static LDM_DRV powervr_driver = {
 #if defined(PVR_LDM_PCI_MODULE)
 	.name		= DRVNAME,
 #endif
-#if defined(PVR_LDM_PCI_MODULE) || defined(PVR_USE_PRE_REGISTERED_PLATFORM_DEV)
+#if defined(PVR_LDM_PCI_MODULE) || defined(PVR_USE_PRE_REGISTERED_PLATFORM_DEV) && !defined(PVR_USE_DEVICE_TREE)
 	.id_table = powervr_id_table,
 #endif
 	.probe		= PVRSRVDriverProbe,
@@ -285,7 +287,6 @@ static LDM_DRV powervr_driver = {
 	.resume		= PVRSRVDriverResume,
 	.shutdown	= PVRSRVDriverShutdown,
 };
-#endif
 
 LDM_DEV *gpsPVRLDMDev;
 

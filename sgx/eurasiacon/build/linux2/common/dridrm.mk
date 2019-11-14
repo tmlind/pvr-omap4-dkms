@@ -41,10 +41,11 @@
 $(eval $(call TunableBothConfigC,SUPPORT_DRI_DRM,))
 $(eval $(call TunableBothConfigC,SUPPORT_DRI_DRM_EXT,))
 $(eval $(call TunableBothConfigC,SUPPORT_DRI_DRM_EXTERNAL,))
-
+$(eval $(call TunableBothConfigC,PVR_USE_DEVICE_TREE,))
 
 $(eval $(call TunableBothConfigMake,SUPPORT_DRI_DRM,))
 $(eval $(call TunableBothConfigMake,SUPPORT_DRI_DRM_EXTERNAL,))
+$(eval $(call TunableBothConfigMake,PVR_USE_DEVICE_TREE,))
 
 ifeq ($(SUPPORT_DRI_DRM),1)
 ifeq ($(SUPPORT_DRI_DRM_NO_LIBDRM),1)

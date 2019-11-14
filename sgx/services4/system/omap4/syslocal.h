@@ -69,7 +69,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if !defined(LDM_PLATFORM)
 #error "LDM_PLATFORM must be set"
 #endif
-#define	PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO
 #include <linux/platform_device.h>
 #endif
 

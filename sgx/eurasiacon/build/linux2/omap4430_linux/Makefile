@@ -60,6 +60,7 @@ include ../common/xorg_test.mk
 ifeq ($(want_xorg),1)
 SUPPORT_DRI_DRM := 1
 SUPPORT_DRI_DRM_EXTERNAL := 1
+PVR_USE_DEVICE_TREE := 1
 SUPPORT_BC_EXAMPLE ?= 0
 else
 SUPPORT_BC_EXAMPLE ?= 1
