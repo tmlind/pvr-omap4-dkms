@@ -1341,8 +1341,9 @@ static void
 MMapVOpenExt(struct vm_area_struct* ps_vma)
 {
 	struct drm_gem_object *obj = ps_vma->vm_private_data;
+	LinuxMemArea *psLinuxMemArea = omap_gem_priv(obj);
 	PKV_OFFSET_STRUCT psOffsetStruct =
-			FindOffsetStructByPID(obj->driver_private, OSGetCurrentProcessIDKM());
+			FindOffsetStructByPID(psLinuxMemArea, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
 	LinuxLockMutex(&g_sMMapMutex);
@@ -1354,8 +1355,9 @@ static void
 MMapVCloseExt(struct vm_area_struct* ps_vma)
 {
 	struct drm_gem_object *obj = ps_vma->vm_private_data;
+	LinuxMemArea *psLinuxMemArea = omap_gem_priv(obj);
 	PKV_OFFSET_STRUCT psOffsetStruct =
-			FindOffsetStructByPID(obj->driver_private, OSGetCurrentProcessIDKM());
+			FindOffsetStructByPID(psLinuxMemArea, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
 	LinuxLockMutex(&g_sMMapMutex);
@@ -1407,7 +1409,7 @@ PVRMMapExt(struct file* pFile, struct vm_area_struct* ps_vma)
 
 	psOffsetStruct->ui32UserVAddr = ps_vma->vm_start;
 
-	obj->driver_private = psOffsetStruct->psLinuxMemArea;
+	omap_gem_set_priv(obj, psOffsetStruct->psLinuxMemArea);
 
 
     /* Compute the flush region (if necessary) inside the mmap mutex */
