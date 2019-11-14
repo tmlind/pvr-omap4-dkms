@@ -67,6 +67,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #if defined(SUPPORT_DRI_DRM)
 #include <drm/drmP.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
+#include "drm/drm_legacy.h"
+#endif
 #endif
 
 #include "services_headers.h"
@@ -879,7 +882,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 	/* First pass, validate the page frame numbers */
 	for(ui32PA = ui32ByteOffset; ui32PA < ui32ByteEnd; ui32PA += PAGE_SIZE)
 	{
-		IMG_UINT32 pfn;
+	    IMG_UINT32 pfn;
 	    IMG_BOOL bMapPage = IMG_TRUE;
 
 		if (psLinuxMemArea->hBMHandle)
@@ -937,7 +940,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 #if defined(PVR_MAKE_ALL_PFNS_SPECIAL)
 		    if (bMixedMap)
 		    {
-			result = vm_insert_mixed(ps_vma, ulVMAPos, pfn);
+			result = vm_insert_mixed(ps_vma, ulVMAPos, pfn_to_pfn_t(pfn));
 	                if(result != 0)
 	                {
 	                    PVR_DPF((PVR_DBG_ERROR,"%s: Error - vm_insert_mixed failed (%d)", __FUNCTION__, result));
@@ -1092,7 +1095,8 @@ static int MMapVAccess(struct vm_area_struct *ps_vma, unsigned long addr,
 	}
 	else
 	{
-		IMG_UINT32 pfn, ui32OffsetInPage;
+		IMG_UINTPTR_T uiOffsetInPage;
+		IMG_UINTPTR_T pfn;
 		struct page *page;
 
 		pfn = LinuxMemAreaToCpuPFN(psLinuxMemArea, ulOffset);
@@ -1101,14 +1105,14 @@ static int MMapVAccess(struct vm_area_struct *ps_vma, unsigned long addr,
 			goto exit_unlock;
 
 		page = pfn_to_page(pfn);
-		ui32OffsetInPage = ADDR_TO_PAGE_OFFSET(ulOffset);
+		uiOffsetInPage = ADDR_TO_PAGE_OFFSET(ulOffset);
 
-		if (ui32OffsetInPage+len > PAGE_SIZE)
+		if (uiOffsetInPage+len > PAGE_SIZE)
 			/* The region crosses a page boundary */
 			goto exit_unlock;
 
 		pvKernelAddr = kmap(page);
-		memcpy(buf, pvKernelAddr+ui32OffsetInPage, len);
+		memcpy(buf, pvKernelAddr+uiOffsetInPage, len);
 		kunmap(page);
 
 		iRetVal = len;
@@ -1177,7 +1181,11 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 
 #if !defined(SUPPORT_DRI_DRM_EXT)
         /* Pass unknown requests onto the DRM module */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,18,0))
         return drm_mmap(pFile, ps_vma);
+#else
+	return drm_legacy_mmap(pFile, ps_vma);
+#endif
 #else
         /*
          * Indicate to caller that the request is not for us.
