@@ -1780,7 +1780,7 @@ LinuxMemAreaStructFree(LinuxMemArea *psLinuxMemArea)
 {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
 	if (psLinuxMemArea->buf)
-		drm_gem_object_unreference_unlocked(psLinuxMemArea->buf);
+		drm_gem_object_put_unlocked(psLinuxMemArea->buf);
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
     KMemCacheFreeWrapper(g_PsLinuxMemAreaCache, psLinuxMemArea);
     /* debug */
