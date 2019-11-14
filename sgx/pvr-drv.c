@@ -121,13 +121,13 @@ static struct drm_ioctl_desc pvr_ioctls[] = {
         DRM_IOCTL_DEF_DRV(PVR_DISP, drm_invalid_op, DRM_MASTER)
 #endif
 };
-
+#if 0
 /* REVISIT: This is used by dmabuf.c */
 struct device *PVRLDMGetDevice(void)
 {
 	return gpsPVRDRMDev->dev;
 }
-
+#endif
 static const struct file_operations pvr_fops = {
 	.owner = THIS_MODULE,
 	.open = drm_open,

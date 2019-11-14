@@ -29,7 +29,7 @@ struct pvr_unpriv {
 #define	DRM_IOCTL_PVR_IS_MASTER	DRM_IOW(DRM_COMMAND_BASE + DRM_PVR_IS_MASTER, struct pvr_dummy)
 #define	DRM_IOCTL_PVR_UNPRIV	DRM_IOWR(DRM_COMMAND_BASE + DRM_PVR_UNPRIV, struct pvr_unpriv)
 #define	DRM_IOCTL_PVR_DBGDRV	DRM_IOWR(DRM_COMMAND_BASE + DRM_PVR_DBGDRV, struct pvr_ioctl)
-#define	DRM_IOCTL_PVR_DISP	DRM_IOWR(DRM_COMMAND_BASE + DRM_PVR_DISP, drm_pvr_display_cmd)
+#define	DRM_IOCTL_PVR_DISP	DRM_IOWR(DRM_COMMAND_BASE + DRM_PVR_DISP, struct pvr_dummy)
 
 #ifdef CONFIG_ARCH_OMAP2PLUS
 int pvr_quirk_omap4_init(struct device *dev, struct drm_device *ddev);
@@ -109,15 +109,11 @@ void PVRSRVDriverShutdown(struct platform_device *pdev);
 #define AM4_SGX530_125(comp, dat)
 #endif
 
-#ifdef ti_omap4_sgx540_120
 #define OMAP4_SGX540_120(comp, dat)	\
 	{				\
 		.compatible = comp,	\
 		.data = dat,		\
 	},
-#else
-#define OMAP4_SGX540_120(comp, dat)
-#endif
 
 #ifdef ti_omap44370_sgx544_112
 #define OMAP4470_SGX544_112(comp, dat)	\
