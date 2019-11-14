@@ -372,7 +372,8 @@ DetermineUsersSizeAndByteOffset(LinuxMemArea *psLinuxMemArea,
 #include "syscommon.h"
 static struct omap_gem_vm_ops gem_ops;
 static struct drm_gem_object *
-create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
+create_gem_wrapper(struct drm_device *dev, struct drm_file *file,
+		IMG_HANDLE handle, LinuxMemArea *psLinuxMemArea,
 		IMG_UINT32 ui32ByteOffset, IMG_UINT32 ui32ByteSize)
 {
 	/* create a new GEM buffer wrapping this mem-area.. */
@@ -433,7 +434,7 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 		}
 		break;
 	case LINUX_MEM_AREA_SUB_ALLOC:
-		return create_gem_wrapper(dev,
+		return create_gem_wrapper(dev, file, handle,
 				psLinuxMemArea->uData.sSubAlloc.psParentLinuxMemArea,
 				psLinuxMemArea->uData.sSubAlloc.ui32ByteOffset + ui32ByteOffset,
 				ui32ByteSize);
@@ -466,7 +467,7 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 	paddr &= ~(PAGE_SIZE-1);
 
 	gsize.bytes = ui32ByteSize;
-	return omap_gem_new_ext(dev, gsize, flags, paddr, pages, &gem_ops);
+	return omap_gem_new_ext(dev, file, handle, gsize, flags, paddr, pages, &gem_ops);
 }
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
@@ -547,7 +548,7 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
         buf = psLinuxMemArea->buf;
         if (!buf)
         {
-            buf = create_gem_wrapper(psEnvPerProc->dev,
+            buf = create_gem_wrapper(psEnvPerProc->dev, psEnvPerProc->file, hMHandle,
                     psLinuxMemArea, 0, psLinuxMemArea->ui32ByteSize);
             if (!buf)
             {
