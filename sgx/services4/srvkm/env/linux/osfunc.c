@@ -2704,10 +2704,16 @@ static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
  @Return   NONE
 
 ******************************************************************************/
-static IMG_VOID OSTimerCallbackWrapper(IMG_UINT32 ui32Data)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,15,0))
+static IMG_VOID OSTimerCallbackWrapper(struct timer_list *t)
 {
-    TIMER_CALLBACK_DATA	*psTimerCBData = (TIMER_CALLBACK_DATA*)ui32Data;
-    
+    TIMER_CALLBACK_DATA	*psTimerCBData = from_timer(psTimerCBData, t, sTimer);
+#else
+static IMG_VOID OSTimerCallbackWrapper(IMG_UINTPTR_T uiData)
+{
+    TIMER_CALLBACK_DATA	*psTimerCBData = (TIMER_CALLBACK_DATA*)uiData;
+#endif
+
 #if defined(PVR_LINUX_TIMERS_USING_WORKQUEUES) || defined(PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE)
     int res;
 
@@ -2756,7 +2762,7 @@ static void OSTimerWorkQueueCallBack(struct work_struct *psWork)
 IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 ui32MsTimeout)
 {
     TIMER_CALLBACK_DATA	*psTimerCBData;
-    IMG_UINT32		ui32i;
+    IMG_UINT32		ui;
 #if !(defined(PVR_LINUX_TIMERS_USING_WORKQUEUES) || defined(PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE))
     unsigned long		ulLockFlags;
 #endif
@@ -2774,9 +2780,9 @@ IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 
 #else
     spin_lock_irqsave(&sTimerStructLock, ulLockFlags);
 #endif
-    for (ui32i = 0; ui32i < OS_MAX_TIMERS; ui32i++)
+    for (ui = 0; ui < OS_MAX_TIMERS; ui++)
     {
-        psTimerCBData = &sTimers[ui32i];
+        psTimerCBData = &sTimers[ui];
         if (!psTimerCBData->bInUse)
         {
             psTimerCBData->bInUse = IMG_TRUE;
@@ -2788,7 +2794,7 @@ IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 
 #else
     spin_unlock_irqrestore(&sTimerStructLock, ulLockFlags);
 #endif
-    if (ui32i >= OS_MAX_TIMERS)
+    if (ui >= OS_MAX_TIMERS)
     {
         PVR_DPF((PVR_DBG_ERROR, "OSAddTimer: all timers are in use"));		
         return IMG_NULL;	
@@ -2807,24 +2813,28 @@ IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 
                                 ?	1
                                 :	((HZ * ui32MsTimeout) / 1000);
     /* initialise object */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,15,0))
+    timer_setup(&psTimerCBData->sTimer, OSTimerCallbackWrapper, 0);
+#else
     init_timer(&psTimerCBData->sTimer);
-    
+
     /* setup timer object */
     /* PRQA S 0307,0563 1 */ /* ignore warning about inconpartible ptr casting */
     psTimerCBData->sTimer.function = (IMG_VOID *)OSTimerCallbackWrapper;
-    psTimerCBData->sTimer.data = (IMG_UINT32)psTimerCBData;
-    
-    return (IMG_HANDLE)(ui32i + 1);
+    psTimerCBData->sTimer.data = (IMG_UINTPTR_T)psTimerCBData;
+#endif
+
+    return (IMG_HANDLE)(ui + 1);
 }
 
 
 static inline TIMER_CALLBACK_DATA *GetTimerStructure(IMG_HANDLE hTimer)
 {
-    IMG_UINT32 ui32i = ((IMG_UINT32)hTimer) - 1;
+    IMG_UINTPTR_T ui = ((IMG_UINTPTR_T)hTimer) - 1;
 
-    PVR_ASSERT(ui32i < OS_MAX_TIMERS);
+    PVR_ASSERT(ui < OS_MAX_TIMERS);
 
-    return &sTimers[ui32i];
+    return &sTimers[ui];
 }
 
 /*!
