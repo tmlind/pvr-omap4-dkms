@@ -400,7 +400,6 @@ static int pvr_max_ioctl = DRM_ARRAY_SIZE(sPVRDrmIoctls);
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
 int pvr_ioctl_base;
-int pvr_mapper_id;
 static struct omap_drm_plugin plugin = {
 		.name = PVR_DRM_NAME,
 
@@ -514,7 +513,6 @@ static int __init PVRSRVDrmInit(void)
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
 	iRes = omap_drm_register_plugin(&plugin);
 	pvr_ioctl_base = plugin.ioctl_base;
-	pvr_mapper_id = omap_drm_register_mapper();
 #else
 	iRes = drm_init(&sPVRDrmDriver);
 #endif
@@ -531,7 +529,6 @@ static int __init PVRSRVDrmInit(void)
 static void __exit PVRSRVDrmExit(void)
 {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-	omap_drm_unregister_mapper(pvr_mapper_id);
 	omap_drm_unregister_plugin(&plugin);
 #else
 	drm_exit(&sPVRDrmDriver);
