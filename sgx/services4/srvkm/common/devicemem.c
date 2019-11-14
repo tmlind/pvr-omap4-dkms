@@ -1638,10 +1638,10 @@ static PVRSRV_ERROR UnwrapExtMemoryCallBack(IMG_PVOID  pvParam,
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
 	if (buf) {
 		if (omap_gem_flags(buf) & OMAP_BO_TILED_MASK) {
-			omap_gem_put_paddr(buf);
+			omap_gem_unpin(buf);
 		} else {
 			if (bPhysContig) {
-				omap_gem_put_paddr(buf);
+				omap_gem_unpin(buf);
 			} else {
 				omap_gem_put_pages(buf);
 			}
@@ -2297,7 +2297,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVImportGEMKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
 
 	if (omap_gem_flags(buf) & OMAP_BO_TILED_MASK)
 	{
-		if (!omap_gem_get_paddr(buf, &paddr, true))
+		if (!omap_gem_pin(buf, &paddr, true))
 		{
 			if (omap_gem_tiled_size(buf, &uTiledBufWidth, &uTiledBufHeight))
 			{
@@ -2334,7 +2334,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVImportGEMKM(PVRSRV_PER_PROCESS_DATA	*psPerProc,
 	}
 	else
 	{
-		if (!omap_gem_get_paddr(buf, &paddr, false))
+		if (!omap_gem_pin(buf, &paddr, false))
 		{
 			uPageOffset = paddr & (ui32HostPageSize - 1);
 			paddr &= ~(ui32HostPageSize - 1);
