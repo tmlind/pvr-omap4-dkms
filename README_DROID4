@@ -1,0 +1,97 @@
+Brief instructions for droid4
+
+Note that this is all very much work in progress:
+
+- Do not install the built packages from pvr-omap4 branch, they
+  almost certainly conflict with newer libraries on your device
+
+- Do not reconfigure Xorg with the module from pvr-omap4, it seems
+  to just initialize the pvr hardware and causes issues
+
+1. Git clone the pvr-omap4-dkms and pvr-omap4 git trees
+
+git://github.com/tmlind/pvr-omap4-dkms.git (this tree)
+git://github.com/mobiaqua/pvr-omap4 (userspace blobs)
+
+2. Patch and build droid4-pending-v5.4 kernel on PC most likely
+
+Use the following git tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
+
+With the following branch:
+
+droid4-pending-v5.4
+
+Patch kernel with patch from pvr-omap4-dkms (this tree):
+
+debian/patches/0001-HACK-drm-omap-Add-omapdrm-plugin-API.patch
+
+3. Build pvr-omap4-dkms kernel module (this tree)
+
+Use something like this to build the kernel module:
+
+$ make -C sgx KERNELDIR=${HOME}/src/linux \
+PATH=${PATH}:${HOME}/x-tools/gcc-8.2.0-binutils-2.31.1 \
+ARCH=arm CROSS_COMPILE=${armcompiler} FLAVOUR=release
+
+Where KERNELDIR points to the Linux kernel branch patched and built in
+step #2 above.
+
+4. Build and install libdri2 for your device
+
+I seem to have 1.0.0~git20120510+26fee2e-0ubuntu2
+
+5. Git clone pvr-omap4 on the device
+
+Use the git link from step #1 on the device to get the userspace blobs
+
+6. Initialize pvr hardware
+
+Make sure no omapdrm_pvr module is loaded, if it is run:
+
+# rmmod omapdrm_pvr
+
+Load the kernel module built in step #3 above:
+
+# insmod omapdrm_pvr.ko
+
+Initialize pvr hardware:
+
+# cd ${HOME}/pvr-omap4
+
+Run a pvrsrvinit with a script:
+
+#!/bin/sh
+pvr=${HOME}/src/pvr-omap4
+PVRDebugLevel=0x7fffffff \
+LD_PRELOAD=${pvr}/usr/lib/libsrv_init.so:\
+${pvr}/usr/lib/libsrv_um.so \
+${pvr}/usr/bin/pvrsrvinit
+
+It should not produce any errors. If it does produce errors, goto #1 above.
+
+Start Xorg, startx or whatever, here we just use Xorg directly:
+
+# Xorg -retro &
+
+Start xgles2test1 demo with a script:
+
+#!/bin/sh
+pvr=${HOME}/src/pvr-omap4
+LD_PRELOAD=\
+${pvr}/usr/lib/libsrv_init.so:\
+${pvr}/usr/lib/libsrv_um.so:\
+${pvr}/usr/lib/libIMGegl.so:\
+${pvr}/usr/lib/libusc.so:\
+${pvr}/usr/lib/libpvrws_KMS.so:\
+${pvr}/usr/lib/libpvr2d.so:\
+${pvr}/usr/lib/libpvrws_WAYLAND.so:\
+${pvr}/usr/lib/libpvrws_OMAPDRI2.so:\
+${pvr}/usr/lib/libGLESv2.so:\
+${pvr}/usr/lib/libglslcompiler.so:\
+${pvr}/usr/lib/libEGL.so \
+${pvr}/usr/bin/xgles2test1 -f 300
+
+And you should see spinning triangles on the LCD. The triangles are sideways
+as we do not have the tiler configured yet.
