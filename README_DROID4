@@ -8,10 +8,9 @@ Note that this is all very much work in progress:
 - Do not reconfigure Xorg with the module from pvr-omap4, it seems
   to just initialize the pvr hardware and causes issues
 
-1. Git clone the pvr-omap4-dkms and pvr-omap4 git trees
+1. Git clone the pvr-omap4-dkms on PC (or ARM device)
 
 git://github.com/tmlind/pvr-omap4-dkms.git (this tree)
-git://github.com/mobiaqua/pvr-omap4 (userspace blobs)
 
 2. Patch and build droid4-pending-v5.4 kernel on PC most likely
 
@@ -27,7 +26,7 @@ Patch kernel with patch from pvr-omap4-dkms (this tree):
 
 debian/patches/0001-HACK-drm-omap-Add-omapdrm-plugin-API.patch
 
-3. Build pvr-omap4-dkms kernel module (this tree)
+3. Build pvr-omap4-dkms kernel module on PC (this tree)
 
 Use something like this to build the kernel module:
 
@@ -42,9 +41,9 @@ step #2 above.
 
 I seem to have 1.0.0~git20120510+26fee2e-0ubuntu2
 
-5. Git clone pvr-omap4 on the device
+5. Git clone pvr-omap4 user space blobs on the device
 
-Use the git link from step #1 on the device to get the userspace blobs
+git://github.com/mobiaqua/pvr-omap4 (userspace blobs)
 
 6. Initialize pvr hardware
 
@@ -71,7 +70,25 @@ ${pvr}/usr/bin/pvrsrvinit
 
 It should not produce any errors. If it does produce errors, goto #1 above.
 
-Start Xorg, startx or whatever, here we just use Xorg directly:
+7. Configure Xorg for xserver-xorg-video-omap
+
+Install xserver-xorg-video-omap package an add a configuration
+file for it:
+
+# cat /etc/X11/xorg.conf.d/99-omap.conf
+Section "Device"
+	Identifier	"Video Device"
+	Driver		"omap"
+	Option		"Debug"		"false"
+EndSection
+
+Section "Screen"
+	Identifier	"Screen"
+	Monitor		"Monitor"
+	Device		"Video Device"
+EndSection
+
+8. Start Xorg, startx or whatever, here we just use Xorg directly:
 
 # Xorg -retro &
 
