@@ -1,6 +1,6 @@
 From tony Mon Sep 17 00:00:00 2001
 From: Rob Clark <rob@ti.com>
-Date: Wed, 13 Nov 2019 17:08:04 -0800
+Date: Fri, 15 Nov 2019 15:46:33 -0800
 Subject: [PATCH] HACK: drm/omap: Add omapdrm plugin API
 
 This patch enables SGX driver to be added as a plugin to omapdrm. This
@@ -52,17 +52,61 @@ Signed-off-by: Jyri Sarha <jsarha@ti.com>
    3f50effdb835 ("drm/omap: remove support for ext mem & sync")
  - Updated patch against v5.4-rc series
  - Pass file in omap_gem_new_ext() to deal with drm_vma_node_allow()]
+ - Add CONFIG_PREEMPT=y to omap2plus_defconfig
+ - Add SGX dts child node into omap4.dtsi
+ - Update dsi command mode panels from omap_gem_op_finish()
+ - Add CONFIG_DRM_LEGACY=y for CONFIG_DRM_VM=y
 Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/gpu/drm/omapdrm/omap_drv.c        | 194 ++++++++++-
+ arch/arm/boot/dts/omap4.dtsi              |   9 +-
+ arch/arm/configs/omap2plus_defconfig      |   2 +
+ drivers/gpu/drm/omapdrm/omap_drv.c        | 194 +++++++++-
  drivers/gpu/drm/omapdrm/omap_fb.c         |   2 +-
  drivers/gpu/drm/omapdrm/omap_fbdev.c      |   2 +-
- drivers/gpu/drm/omapdrm/omap_gem.c        | 404 +++++++++++++++++++++-
+ drivers/gpu/drm/omapdrm/omap_gem.c        | 412 +++++++++++++++++++++-
  drivers/gpu/drm/omapdrm/omap_gem.h        |   8 -
  drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c |   2 +-
  include/uapi/drm/omap_drm.h               |  79 ++++-
- 7 files changed, 665 insertions(+), 26 deletions(-)
+ 9 files changed, 680 insertions(+), 30 deletions(-)
 
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -347,10 +347,11 @@
+ 			#size-cells = <1>;
+ 			ranges = <0 0x56000000 0x2000000>;
+ 
+-			/*
+-			 * Closed source PowerVR driver, no child device
+-			 * binding or driver in mainline
+-			 */
++			sgx: img@0 {
++				compatible = "ti,omap4-sgx540-120", "img,sgx540-120", "img,sgx540";
++				reg = <0x0 0x2000000>;	/* 32MB */
++				interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
++			};
+ 		};
+ 
+ 		dss: dss@58000000 {
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -4,6 +4,7 @@ CONFIG_POSIX_MQUEUE=y
+ CONFIG_AUDIT=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
+ CONFIG_BSD_PROCESS_ACCT=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
+@@ -371,6 +372,7 @@ CONFIG_DRM_PANEL_SHARP_LS037V7DW01=m
+ CONFIG_DRM_PANEL_SONY_ACX565AKM=m
+ CONFIG_DRM_PANEL_TPO_TD028TTEC1=m
+ CONFIG_DRM_PANEL_TPO_TD043MTEA1=m
++CONFIG_DRM_LEGACY=y
+ CONFIG_FB=y
+ CONFIG_FIRMWARE_EDID=y
+ CONFIG_FB_MODE_HELPERS=y
 diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
 --- a/drivers/gpu/drm/omapdrm/omap_drv.c
 +++ b/drivers/gpu/drm/omapdrm/omap_drv.c
@@ -470,7 +514,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		if (omap_obj->dma_addr_cnt == 0) {
  			u32 npages = obj->size >> PAGE_SHIFT;
  			enum tiler_fmt fmt = gem2fmt(omap_obj->flags);
-@@ -1068,6 +1123,256 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
+@@ -1068,6 +1123,264 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
  }
  #endif
  
@@ -584,9 +628,17 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +	return sync_op(obj, op, true);
 +}
 +
++/* end of read and/or write operation, update dsi command mode panel */
 +int omap_gem_op_finish(struct drm_gem_object *obj, enum omap_gem_op op)
 +{
-+	return sync_op(obj, op, false);
++	struct omap_drm_private *priv = obj->dev->dev_private;
++	struct drm_crtc *crtc = priv->pipes[0].crtc;
++	int error;
++
++	error = sync_op(obj, op, false);
++	omap_crtc_flush(crtc);
++
++	return error;
 +}
 +
 +static DECLARE_WAIT_QUEUE_HEAD(sync_event);
@@ -727,7 +779,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  /* -----------------------------------------------------------------------------
   * Constructor & Destructor
   */
-@@ -1095,6 +1400,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1095,6 +1408,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	/* The object should not be pinned. */
  	WARN_ON(omap_obj->dma_addr_cnt > 0);
  
@@ -738,7 +790,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	if (omap_obj->pages) {
  		if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
  			kfree(omap_obj->pages);
-@@ -1113,6 +1422,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1113,6 +1430,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  
  	mutex_unlock(&omap_obj->lock);
  
@@ -750,7 +802,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	drm_gem_object_release(obj);
  
  	mutex_destroy(&omap_obj->lock);
-@@ -1158,9 +1472,10 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1158,9 +1480,10 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		 * use contiguous memory only if no TILER is available.
  		 */
  		flags |= OMAP_BO_MEM_DMA_API;
@@ -763,7 +815,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		 */
  		flags |= OMAP_BO_MEM_SHMEM;
  	}
-@@ -1379,3 +1694,84 @@ void omap_gem_deinit(struct drm_device *dev)
+@@ -1379,3 +1702,84 @@ void omap_gem_deinit(struct drm_device *dev)
  	 */
  	kfree(priv->usergart);
  }
@@ -984,4 +1036,4 @@ diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
  }
  #endif
 -- 
-2.23.0
+2.24.0
