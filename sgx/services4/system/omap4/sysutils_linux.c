@@ -272,7 +272,6 @@ PVRSRV_ERROR EnableSGXClocks(SYS_DATA *psSysData)
 ******************************************************************************/
 IMG_VOID DisableSGXClocks(SYS_DATA *psSysData)
 {
-#if 0
 #if !defined(NO_HARDWARE)
 	SYS_SPECIFIC_DATA *psSysSpecData = (SYS_SPECIFIC_DATA *) psSysData->pvSysSpecificData;
 
@@ -338,7 +337,6 @@ IMG_VOID DisableSGXClocks(SYS_DATA *psSysData)
 #else	/* !defined(NO_HARDWARE) */
 	PVR_UNREFERENCED_PARAMETER(psSysData);
 #endif	/* !defined(NO_HARDWARE) */
-#endif
 }
 
 #if (defined(DEBUG) || defined(TIMING)) && !defined(PVR_NO_OMAP_TIMER)
