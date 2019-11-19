@@ -311,6 +311,9 @@ static int pvr_probe(struct platform_device *pdev)
 	if (error)
 		return error;
 
+	/* Allow agressive runtime PM. Balanced in pvr_remove() */
+	pm_runtime_put_sync(ddata->dev);
+
 	return 0;
 
 out_err_unload:
@@ -328,11 +331,19 @@ out_err_idle:
 
 static int pvr_remove(struct platform_device *pdev)
 {
+	int active;
+
+	active = pm_runtime_get_sync(&pdev->dev);
+	if (active < 0)
+		pm_runtime_put_noidle(&pdev->dev);
+
 	pvr_quirk_omap4_cleanup();
 	drm_put_dev(gpsPVRDRMDev);
 	pvr_drm_unload(gpsPVRDRMDev);
 	gpsPVRDRMDev = NULL;
 
+	if (active)
+		pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
 
