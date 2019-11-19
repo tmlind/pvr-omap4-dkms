@@ -18,6 +18,13 @@
 
 static struct omap_drm_plugin plugin;
 
+static void pvr_omap4_release(struct drm_device *dev, struct drm_file *file)
+{
+	PVRSRVRelease(file->driver_priv);
+
+	file->driver_priv = NULL;
+}
+
 int pvr_quirk_omap4_init(struct device *dev, struct drm_device *ddev)
 {
 	int error;
@@ -25,6 +32,7 @@ int pvr_quirk_omap4_init(struct device *dev, struct drm_device *ddev)
 	plugin.dev = ddev;
 	plugin.name = dev->driver->name;
 	plugin.open = ddev->driver->open;
+	plugin.release = pvr_omap4_release;
 	plugin.ioctls = ddev->driver->ioctls;
 	plugin.num_ioctls = ddev->driver->num_ioctls;
 

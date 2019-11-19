@@ -72,13 +72,6 @@ static int pvr_open(struct drm_device *dev, struct drm_file *file)
 	return PVRSRVOpen(dev, file);
 }
 
-static void pvr_postclose(struct drm_device *dev, struct drm_file *file)
-{
-	PVRSRVRelease(file->driver_priv);
-
-	file->driver_priv = NULL;
-}
-
 static int pvr_ioctl_command(struct drm_device *dev, void *arg, struct drm_file *filp)
 {
 	dev_dbg(dev->dev, "%s: dev: %px arg: %px filp: %px\n", __func__, dev, arg, filp);
@@ -128,12 +121,26 @@ struct device *PVRLDMGetDevice(void)
 	return gpsPVRDRMDev->dev;
 }
 #endif
+static int pvr_drm_release(struct inode *inode, struct file *filp)
+{
+	struct drm_file *file_priv = filp->private_data;
+	int error;
+
+	error = drm_release(inode, filp);
+	if (error)
+		return error;
+
+	PVRSRVRelease(file_priv->driver_priv);
+
+	return 0;
+}
+
 static const struct file_operations pvr_fops = {
 	.owner = THIS_MODULE,
 	.open = drm_open,
+	.release = pvr_drm_release,
 	.unlocked_ioctl = drm_ioctl,
 	.compat_ioctl = drm_compat_ioctl,
-	////.release = pvr_drm_release,
 	.mmap = PVRMMap,
 	.poll = drm_poll,
 	.read = drm_read,
@@ -144,7 +151,6 @@ static struct drm_driver pvr_drm_driver = {
 	.driver_features = DRIVER_RENDER,
 	.dev_priv_size = 0,
 	.open = pvr_open,
-	.postclose = pvr_postclose,
 	.ioctls = pvr_ioctls,
 	.num_ioctls = ARRAY_SIZE(pvr_ioctls),
 	.fops = &pvr_fops,
