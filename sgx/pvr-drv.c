@@ -281,6 +281,8 @@ static int pvr_probe(struct platform_device *pdev)
 		return error;
 
 	pm_runtime_enable(ddata->dev);
+	pm_runtime_use_autosuspend(ddata->dev);
+	pm_runtime_set_autosuspend_delay(ddata->dev, 2000);
 	error = pm_runtime_get_sync(ddata->dev);
 	if (error < 0) {
 		pm_runtime_put_noidle(ddata->dev);
@@ -311,8 +313,8 @@ static int pvr_probe(struct platform_device *pdev)
 	if (error)
 		return error;
 
-	/* Allow agressive runtime PM. Balanced in pvr_remove() */
-	pm_runtime_put_sync(ddata->dev);
+	pm_runtime_mark_last_busy(ddata->dev);
+	pm_runtime_put_autosuspend(ddata->dev);
 
 	return 0;
 
@@ -324,6 +326,7 @@ out_err_free:
 
 out_err_idle:
 	pm_runtime_put_sync(ddata->dev);
+	pm_runtime_dont_use_autosuspend(ddata->dev);
 	pm_runtime_disable(ddata->dev);
 
 	return error;
@@ -345,6 +348,7 @@ static int pvr_remove(struct platform_device *pdev)
 	if (active)
 		pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_put_sync(&pdev->dev);
+	pm_runtime_dont_use_autosuspend(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
 
 	return 0;
