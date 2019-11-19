@@ -106,12 +106,12 @@ static int pvr_ioctl_dbgdrv(struct drm_device *dev, void *arg, struct drm_file *
 
 static struct drm_ioctl_desc pvr_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(PVR_SRVKM, pvr_ioctl_command, DRM_RENDER_ALLOW),
-        DRM_IOCTL_DEF_DRV(PVR_IS_MASTER, pvr_ioctl_drm_is_master,
-			  DRM_RENDER_ALLOW | DRM_MASTER),
-        DRM_IOCTL_DEF_DRV(PVR_UNPRIV, pvr_ioctl_unpriv, DRM_RENDER_ALLOW),
-        DRM_IOCTL_DEF_DRV(PVR_DBGDRV, pvr_ioctl_dbgdrv, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(PVR_IS_MASTER, pvr_ioctl_drm_is_master,
+			   DRM_RENDER_ALLOW | DRM_MASTER),
+	DRM_IOCTL_DEF_DRV(PVR_UNPRIV, pvr_ioctl_unpriv, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(PVR_DBGDRV, pvr_ioctl_dbgdrv, DRM_RENDER_ALLOW),
 #ifdef PVR_DISPLAY_CONTROLLER_DRM_IOCTL
-        DRM_IOCTL_DEF_DRV(PVR_DISP, drm_invalid_op, DRM_MASTER)
+	DRM_IOCTL_DEF_DRV(PVR_DISP, drm_invalid_op, DRM_MASTER)
 #endif
 };
 #if 0
@@ -207,10 +207,10 @@ static int pvr_resume(struct device *dev)
 #endif
 
 static const struct dev_pm_ops pvr_pm_ops = {
-        SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(pvr_suspend, pvr_resume)
-        SET_RUNTIME_PM_OPS(pvr_runtime_suspend,
-                           pvr_runtime_resume,
-                           NULL)
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(pvr_suspend, pvr_resume)
+	SET_RUNTIME_PM_OPS(pvr_runtime_suspend,
+			    pvr_runtime_resume,
+			    NULL)
 };
 
 static const struct pvr_capabilities __maybe_unused pvr_omap3 = {
@@ -228,16 +228,21 @@ static const struct pvr_capabilities __maybe_unused pvr_omap5 = {
 	.smp = true,
 };
 
+static const struct pvr_capabilities __maybe_unused pvr_jz4780 = {
+	.smp = true,
+};
+
 static const struct of_device_id pvr_ids[] = {
 	OMAP3_SGX530_121("ti,omap3-sgx530-121", &pvr_omap3)
 	OMAP3630_SGX530_125("ti,omap3-sgx530-125", &pvr_omap3)
 	AM3517_SGX530_125("ti,am3517-sgx530-125", &pvr_omap3)
-	AM335X_SGX530_125("ti,am335x-sgx530-125", &pvr_omap3)
+	AM335X_SGX530_125("ti,am3352-sgx530-125", &pvr_omap3)
 	AM4_SGX530_125("ti,am4-sgx530-125", &pvr_omap3)
 	OMAP4_SGX540_120("ti,omap4-sgx540-120", &pvr_omap4)
 	OMAP4470_SGX544_112("ti,omap4-sgx544-112", &pvr_omap4470)
 	OMAP5_SGX544_116("ti,omap5-sgx544-116", &pvr_omap5)
 	DRA7_SGX544_116("ti,dra7-sgx544-116", &pvr_omap5)
+	JZ4780_SGX540_120("ingenic,jz4780-sgx540-120", &pvr_jz4780)
 	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, pvr_ids);
