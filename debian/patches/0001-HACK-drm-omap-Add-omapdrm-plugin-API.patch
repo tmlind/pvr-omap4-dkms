@@ -784,7 +784,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	WARN_ON(omap_obj->dma_addr_cnt > 0);
  
 +	/* don't free externally allocated backing memory */
-+	if (!(omap_obj->flags & OMAP_BO_MEM_EXT))
++	if (omap_obj->flags & OMAP_BO_MEM_EXT)
 +		goto check_bo_ext_sync;
 +
  	if (omap_obj->pages) {
@@ -1036,4 +1036,4 @@ diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
  }
  #endif
 -- 
-2.24.0
+2.24.1
