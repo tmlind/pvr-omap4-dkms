@@ -1242,7 +1242,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,18,0))
         return drm_mmap(pFile, ps_vma);
 #else
-	return drm_legacy_mmap(pFile, ps_vma);
+	return drm_gem_mmap(pFile, ps_vma);
 #endif
 #else
         /*
