@@ -519,9 +519,8 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 	PVRSRV_ENV_PER_PROCESS_DATA *psEnvPerProc =
 			(PVRSRV_ENV_PER_PROCESS_DATA *)PVRSRVProcessPrivateData(psPerProc);
 	struct drm_gem_object *buf = NULL;
-        IMG_UINT32 uiHandle, *puiHandle;
+        IMG_UINT32 *puiHandle;
 	IMG_UINT32 ret;
-        puiHandle = &uiHandle;
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
     LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
@@ -541,6 +540,7 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
     }
 
     psLinuxMemArea = (LinuxMemArea *)hOSMemHandle;
+    puiHandle = &psLinuxMemArea->uiHandle;
 
         /* Sparse mappings have to ask the BM for the virtual size */
 	if (psLinuxMemArea->hBMHandle)
@@ -717,6 +717,10 @@ PVRMMapReleaseMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
     IMG_HANDLE hOSMemHandle;
     PVRSRV_ERROR eError;
     IMG_UINT32 ui32PID = OSGetCurrentProcessIDKM();
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+	PVRSRV_ENV_PER_PROCESS_DATA *psEnvPerProc =
+			(PVRSRV_ENV_PER_PROCESS_DATA *)PVRSRVProcessPrivateData(psPerProc);
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
     LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
@@ -735,6 +739,13 @@ PVRMMapReleaseMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
     }
 
     psLinuxMemArea = (LinuxMemArea *)hOSMemHandle;
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+    if (psLinuxMemArea->uiHandle) {
+	drm_gem_handle_delete(psEnvPerProc->file, psLinuxMemArea->uiHandle);
+	psLinuxMemArea->uiHandle = 0;
+    }
+#endif
 
     psOffsetStruct = FindOffsetStructByPID(psLinuxMemArea, ui32PID);
     if (psOffsetStruct)

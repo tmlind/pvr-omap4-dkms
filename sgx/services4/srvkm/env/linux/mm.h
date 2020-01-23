@@ -201,6 +201,7 @@ struct _LinuxMemArea {
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
     IMG_HANDLE		buf;	/* external buffer handle, like a GEM or ION buffer */
+    IMG_UINT32		uiHandle; /* GEM handle */
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
 };
 
