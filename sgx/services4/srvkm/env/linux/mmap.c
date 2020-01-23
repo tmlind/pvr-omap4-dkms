@@ -539,29 +539,7 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 
     psLinuxMemArea = (LinuxMemArea *)hOSMemHandle;
 
-#if defined(SUPPORT_DRI_DRM_EXTERNAL)
-    /* if we are using DRM/GEM, then let GEM generate the buffer offset..
-     * this is done by creating a wrapper object.
-     */
-    if (psEnvPerProc->dev && psEnvPerProc->file)
-    {
-        buf = psLinuxMemArea->buf;
-        if (!buf)
-        {
-            buf = create_gem_wrapper(psEnvPerProc->dev, psEnvPerProc->file, hMHandle,
-                    psLinuxMemArea, 0, psLinuxMemArea->ui32ByteSize);
-            if (!buf)
-            {
-                PVR_DPF((PVR_DBG_ERROR, "%s: Screw you guys, I'm going home..", __FUNCTION__));
-                eError = PVRSRV_ERROR_OUT_OF_MEMORY;
-                goto exit_unlock;
-            }
-            psLinuxMemArea->buf = buf;
-        }
-    }
-#endif /* SUPPORT_DRI_DRM_EXTERNAL */
-
-	/* Sparse mappings have to ask the BM for the virtual size */
+        /* Sparse mappings have to ask the BM for the virtual size */
 	if (psLinuxMemArea->hBMHandle)
 	{
 		*pui32RealByteSize = BM_GetVirtualSize(psLinuxMemArea->hBMHandle);
@@ -573,6 +551,28 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 										pui32RealByteSize,
 										pui32ByteOffset);
 	}
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+    /* if we are using DRM/GEM, then let GEM generate the buffer offset..
+     * this is done by creating a wrapper object.
+     */
+    if (psEnvPerProc->dev && psEnvPerProc->file)
+    {
+        buf = psLinuxMemArea->buf;
+        if (!buf)
+        {
+            buf = create_gem_wrapper(psEnvPerProc->dev, psEnvPerProc->file, hMHandle,
+                    psLinuxMemArea, 0, *pui32RealByteSize);
+            if (!buf)
+            {
+                PVR_DPF((PVR_DBG_ERROR, "%s: Screw you guys, I'm going home..", __FUNCTION__));
+                eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+                goto exit_unlock;
+            }
+            psLinuxMemArea->buf = buf;
+        }
+    }
+#endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
     psOffsetStruct = FindOffsetStructByPID(psLinuxMemArea, psPerProc->ui32PID);
     if (psOffsetStruct)
