@@ -1778,9 +1778,19 @@ LinuxMemAreaStructAlloc(IMG_VOID)
 static IMG_VOID
 LinuxMemAreaStructFree(LinuxMemArea *psLinuxMemArea)
 {
+	struct page **pages = NULL;
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-	if (psLinuxMemArea->buf)
+	if (psLinuxMemArea->buf) {
+#define OMAP_BO_EXT_MEM		0x04000000	/* externally allocated memory */
+		if (omap_gem_flags(psLinuxMemArea->buf) & OMAP_BO_EXT_MEM){
+#undef OMAP_BO_EXT_MEM
+			omap_gem_get_pages(psLinuxMemArea->buf, &pages, 0);
+		}
 		drm_gem_object_put_unlocked(psLinuxMemArea->buf);
+
+		if(pages)
+			kfree(pages);
+	}
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
     KMemCacheFreeWrapper(g_PsLinuxMemAreaCache, psLinuxMemArea);
     /* debug */
