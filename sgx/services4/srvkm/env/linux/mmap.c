@@ -382,6 +382,7 @@ create_gem_wrapper(struct drm_device *dev, struct drm_file *file,
 	struct page **pages = NULL;
 	unsigned long paddr = 0;
 	int i, npages = PAGE_ALIGN(ui32ByteSize) / PAGE_SIZE;
+	int srcnpages;
 
 
 	/* from GEM buffer object point of view, we are either mapping
@@ -429,7 +430,18 @@ create_gem_wrapper(struct drm_device *dev, struct drm_file *file,
 		break;
 	case LINUX_MEM_AREA_ALLOC_PAGES:
 		pages = kmalloc(sizeof(pages) * npages, GFP_KERNEL);
-		for (i = 0; i < npages; i++) {
+		/*
+		 * The number of pages allocated at NewAllocPagesLinuxMemArea
+		 * [sgx/services4/srvkm/env/linux/mm.c] is stored in
+		 * psLinuxMemArea->ui32ByteSize.
+		 * However, the number of pages required is not at times the
+		 * same as calculated in BM_GetVirtualSize.
+		 *
+		 * Its ok to allocate a bigger array of pages, but let's not
+		 * try to access the source array beyond the array bounds.
+		 */
+		srcnpages = PAGE_ALIGN(psLinuxMemArea->ui32ByteSize) / PAGE_SIZE;
+		for (i = 0; i < srcnpages; i++) {
 			pages[i] = psLinuxMemArea->uData.sPageList.ppsPageList[i + PHYS_TO_PFN(ui32ByteOffset)];
 		}
 		break;
