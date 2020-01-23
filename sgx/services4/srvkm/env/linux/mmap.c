@@ -519,6 +519,8 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 	PVRSRV_ENV_PER_PROCESS_DATA *psEnvPerProc =
 			(PVRSRV_ENV_PER_PROCESS_DATA *)PVRSRVProcessPrivateData(psPerProc);
 	struct drm_gem_object *buf = NULL;
+        IMG_UINT32 uiHandle, *puiHandle;
+        puiHandle = &uiHandle;
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
 
     LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
@@ -563,12 +565,23 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
         {
             buf = create_gem_wrapper(psEnvPerProc->dev, psEnvPerProc->file, hMHandle,
                     psLinuxMemArea, 0, *pui32RealByteSize);
+	    if(buf){
+		int ret;
+		ret = drm_gem_handle_create(psEnvPerProc->file, (struct drm_gem_object *)buf, puiHandle);
+		if(ret) {
+			/*This means we are royaly screwed up. Go home. */
+			/*Please don't worry about not freeing the GEM. */
+			/*DRM core will take care of it, eventually.    */
+			buf = NULL;
+		}
+	    }
             if (!buf)
             {
                 PVR_DPF((PVR_DBG_ERROR, "%s: Screw you guys, I'm going home..", __FUNCTION__));
                 eError = PVRSRV_ERROR_OUT_OF_MEMORY;
                 goto exit_unlock;
             }
+
             psLinuxMemArea->buf = buf;
         }
     }
