@@ -56,18 +56,19 @@ Signed-off-by: Jyri Sarha <jsarha@ti.com>
  - Add SGX dts child node into omap4.dtsi
  - Update dsi command mode panels from omap_gem_op_finish()
  - Add CONFIG_DRM_LEGACY=y for CONFIG_DRM_VM=y
+ - Ignore ERESTARTSYS to avoid unpaired ioctl_gem_cpu_prep ioctl_gem_cpu_fini]
 Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
  arch/arm/boot/dts/omap4.dtsi              |   9 +-
  arch/arm/configs/omap2plus_defconfig      |   2 +
- drivers/gpu/drm/omapdrm/omap_drv.c        | 194 +++++++++-
+ drivers/gpu/drm/omapdrm/omap_drv.c        | 198 ++++++++++-
  drivers/gpu/drm/omapdrm/omap_fb.c         |   2 +-
  drivers/gpu/drm/omapdrm/omap_fbdev.c      |   2 +-
  drivers/gpu/drm/omapdrm/omap_gem.c        | 412 +++++++++++++++++++++-
  drivers/gpu/drm/omapdrm/omap_gem.h        |   8 -
  drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c |   2 +-
  include/uapi/drm/omap_drm.h               |  79 ++++-
- 9 files changed, 680 insertions(+), 30 deletions(-)
+ 9 files changed, 684 insertions(+), 30 deletions(-)
 
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
 --- a/arch/arm/boot/dts/omap4.dtsi
@@ -146,7 +147,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  static int ioctl_gem_new(struct drm_device *dev, void *data,
  		struct drm_file *file_priv)
  {
-@@ -449,6 +471,53 @@ static int ioctl_gem_new(struct drm_device *dev, void *data,
+@@ -449,6 +471,57 @@ static int ioctl_gem_new(struct drm_device *dev, void *data,
  				   &args->handle);
  }
  
@@ -164,10 +165,18 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
 +		return -ENOENT;
 +
 +	ret = omap_gem_op_sync(obj, args->op);
++	if (ret && ret != -ERESTARTSYS)
++		goto put_unlocked;
 +
-+	if (!ret)
-+		ret = omap_gem_op_start(obj, args->op);
++	/*
++	 * Just ignore -ERESTARTSYS from omap_gem_op_sync() and continue in
++	 * order to keep ioctl_gem_cpu_prep() and ioctl_gem_cpu_fini() calls
++	 * paired for usage counts. Otherwise rotating a full screen OpenGL ES
++	 * app with xrandr a few times fails.
++	 */
++	ret = omap_gem_op_start(obj, args->op);
 +
++put_unlocked:
 +	drm_gem_object_put_unlocked(obj);
 +
 +	return ret;
@@ -186,11 +195,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
 +	if (!obj)
 +		return -ENOENT;
 +
-+	/* XXX flushy, flushy */
-+	ret = 0;
-+
-+	if (!ret)
-+		ret = omap_gem_op_finish(obj, args->op);
++	ret = omap_gem_op_finish(obj, args->op);
 +
 +	drm_gem_object_put_unlocked(obj);
 +
@@ -200,7 +205,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  static int ioctl_gem_info(struct drm_device *dev, void *data,
  		struct drm_file *file_priv)
  {
-@@ -470,19 +539,19 @@ static int ioctl_gem_info(struct drm_device *dev, void *data,
+@@ -470,19 +543,19 @@ static int ioctl_gem_info(struct drm_device *dev, void *data,
  	return ret;
  }
  
@@ -227,7 +232,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  	DRM_IOCTL_DEF_DRV(OMAP_GEM_INFO, ioctl_gem_info,
  			  DRM_RENDER_ALLOW),
  };
-@@ -491,19 +560,50 @@ static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] =
+@@ -491,19 +564,50 @@ static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] =
   * drm driver funcs
   */
  
@@ -280,7 +285,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  };
  
  static const struct file_operations omapdriver_fops = {
-@@ -521,7 +621,10 @@ static const struct file_operations omapdriver_fops = {
+@@ -521,7 +625,10 @@ static const struct file_operations omapdriver_fops = {
  static struct drm_driver omap_drm_driver = {
  	.driver_features = DRIVER_MODESET | DRIVER_GEM  |
  		DRIVER_ATOMIC | DRIVER_RENDER,
@@ -291,7 +296,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  	.lastclose = drm_fb_helper_lastclose,
  #ifdef CONFIG_DEBUG_FS
  	.debugfs_init = omap_debugfs_init,
-@@ -553,6 +656,79 @@ static const struct soc_device_attribute omapdrm_soc_devices[] = {
+@@ -553,6 +660,79 @@ static const struct soc_device_attribute omapdrm_soc_devices[] = {
  	{ /* sentinel */ }
  };
  
