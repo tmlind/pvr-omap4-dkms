@@ -56,7 +56,9 @@ Signed-off-by: Jyri Sarha <jsarha@ti.com>
  - Add SGX dts child node into omap4.dtsi
  - Update dsi command mode panels from omap_gem_op_finish()
  - Add CONFIG_DRM_LEGACY=y for CONFIG_DRM_VM=y
- - Ignore ERESTARTSYS to avoid unpaired ioctl_gem_cpu_prep ioctl_gem_cpu_fini]
+ - Ignore ERESTARTSYS to avoid unpaired ioctl_gem_cpu_prep ioctl_gem_cpu_fini
+ - Make omap_gem_set_sync_object a nop for PVRSRV_DISABLE_UM_SYNCOBJ_MAPPINGS
+ - Remove waiter->read/write_target]
 Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
  arch/arm/boot/dts/omap4.dtsi              |   9 +-
@@ -64,11 +66,11 @@ Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
  drivers/gpu/drm/omapdrm/omap_drv.c        | 198 ++++++++++-
  drivers/gpu/drm/omapdrm/omap_fb.c         |   2 +-
  drivers/gpu/drm/omapdrm/omap_fbdev.c      |   2 +-
- drivers/gpu/drm/omapdrm/omap_gem.c        | 412 +++++++++++++++++++++-
+ drivers/gpu/drm/omapdrm/omap_gem.c        | 381 +++++++++++++++++++++-
  drivers/gpu/drm/omapdrm/omap_gem.h        |   8 -
  drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c |   2 +-
  include/uapi/drm/omap_drm.h               |  79 ++++-
- 9 files changed, 684 insertions(+), 30 deletions(-)
+ 9 files changed, 653 insertions(+), 30 deletions(-)
 
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
 --- a/arch/arm/boot/dts/omap4.dtsi
@@ -519,7 +521,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		if (omap_obj->dma_addr_cnt == 0) {
  			u32 npages = obj->size >> PAGE_SHIFT;
  			enum tiler_fmt fmt = gem2fmt(omap_obj->flags);
-@@ -1068,6 +1123,264 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
+@@ -1068,6 +1123,233 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
  }
  #endif
  
@@ -533,7 +535,6 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +	struct list_head list;
 +	struct omap_gem_object *omap_obj;
 +	enum omap_gem_op op;
-+	uint32_t read_target, write_target;
 +	/* notify called w/ sync_lock held */
 +	void (*notify)(void *arg);
 +	void *arg;
@@ -550,10 +551,10 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +{
 +	struct omap_gem_object *omap_obj = waiter->omap_obj;
 +	if ((waiter->op & OMAP_GEM_READ) &&
-+			(omap_obj->sync->write_complete < waiter->write_target))
++			(omap_obj->sync->write_complete < omap_obj->sync->write_pending))
 +		return true;
 +	if ((waiter->op & OMAP_GEM_WRITE) &&
-+			(omap_obj->sync->read_complete < waiter->read_target))
++			(omap_obj->sync->read_complete < omap_obj->sync->read_pending))
 +		return true;
 +	return false;
 +}
@@ -669,8 +670,6 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +
 +		waiter->omap_obj = omap_obj;
 +		waiter->op = op;
-+		waiter->read_target = omap_obj->sync->read_pending;
-+		waiter->write_target = omap_obj->sync->write_pending;
 +		waiter->notify = sync_notify;
 +		waiter->arg = &waiter_task;
 +
@@ -720,8 +719,6 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +
 +		waiter->omap_obj = omap_obj;
 +		waiter->op = op;
-+		waiter->read_target = omap_obj->sync->read_pending;
-+		waiter->write_target = omap_obj->sync->write_pending;
 +		waiter->notify = fxn;
 +		waiter->arg = arg;
 +
@@ -744,47 +741,21 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +	return 0;
 +}
 +
-+/* special API so PVR can update the buffer to use a sync-object allocated
-+ * from it's sync-obj heap.  Only used for a newly allocated (from PVR's
-+ * perspective) sync-object, so we overwrite the new syncobj w/ values
-+ * from the already allocated syncobj (if there is one)
++/* Old unused special API so PVR can update the buffer to use a sync-object
++ * allocated from it's sync-obj heap.  Only used for a newly allocated (from
++ * PVR's perspective) sync-object, so we overwrite the new syncobj w/ values
++ * from the already allocated syncobj (if there is one). In pvr-omap4-dkms
++ * we have had PVRSRV_DISABLE_UM_SYNCOBJ_MAPPINGS, so this now unused.
 + */
 +int omap_gem_set_sync_object(struct drm_gem_object *obj, void *syncobj)
 +{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	int ret = 0;
-+
-+	spin_lock(&sync_lock);
-+
-+	if ((omap_obj->flags & OMAP_BO_EXT_SYNC) && !syncobj) {
-+		/* clearing a previously set syncobj */
-+		syncobj = kmemdup(omap_obj->sync, sizeof(*omap_obj->sync),
-+				  GFP_ATOMIC);
-+		if (!syncobj) {
-+			ret = -ENOMEM;
-+			goto unlock;
-+		}
-+		omap_obj->flags &= ~OMAP_BO_EXT_SYNC;
-+		omap_obj->sync = syncobj;
-+	} else if (syncobj && !(omap_obj->flags & OMAP_BO_EXT_SYNC)) {
-+		/* replacing an existing syncobj */
-+		if (omap_obj->sync) {
-+			memcpy(syncobj, omap_obj->sync, sizeof(*omap_obj->sync));
-+			kfree(omap_obj->sync);
-+		}
-+		omap_obj->flags |= OMAP_BO_EXT_SYNC;
-+		omap_obj->sync = syncobj;
-+	}
-+
-+unlock:
-+	spin_unlock(&sync_lock);
-+	return ret;
++	return 0;
 +}
 +
  /* -----------------------------------------------------------------------------
   * Constructor & Destructor
   */
-@@ -1095,6 +1408,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1095,6 +1377,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	/* The object should not be pinned. */
  	WARN_ON(omap_obj->dma_addr_cnt > 0);
  
@@ -795,7 +766,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	if (omap_obj->pages) {
  		if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
  			kfree(omap_obj->pages);
-@@ -1113,6 +1430,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1113,6 +1399,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  
  	mutex_unlock(&omap_obj->lock);
  
@@ -807,7 +778,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	drm_gem_object_release(obj);
  
  	mutex_destroy(&omap_obj->lock);
-@@ -1158,9 +1480,10 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1158,9 +1449,10 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		 * use contiguous memory only if no TILER is available.
  		 */
  		flags |= OMAP_BO_MEM_DMA_API;
@@ -820,7 +791,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		 */
  		flags |= OMAP_BO_MEM_SHMEM;
  	}
-@@ -1379,3 +1702,84 @@ void omap_gem_deinit(struct drm_device *dev)
+@@ -1379,3 +1671,84 @@ void omap_gem_deinit(struct drm_device *dev)
  	 */
  	kfree(priv->usergart);
  }
