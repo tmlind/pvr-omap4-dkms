@@ -1,6 +1,6 @@
 From tony Mon Sep 17 00:00:00 2001
 From: Rob Clark <rob@ti.com>
-Date: Fri, 15 Nov 2019 15:46:33 -0800
+Date: Mon, 3 Feb 2020 10:38:55 -0800
 Subject: [PATCH] HACK: drm/omap: Add omapdrm plugin API
 
 This patch enables SGX driver to be added as a plugin to omapdrm. This
@@ -59,23 +59,28 @@ Signed-off-by: Jyri Sarha <jsarha@ti.com>
  - Ignore ERESTARTSYS to avoid unpaired ioctl_gem_cpu_prep ioctl_gem_cpu_fini
  - Make omap_gem_set_sync_object a nop for PVRSRV_DISABLE_UM_SYNCOBJ_MAPPINGS
  - Remove waiter->read/write_target]
+ - Fix alignment on the tiler sgx path
+ - Update to use OMAP_BO_TILED_MASK
+ - Add back reverted omapdrm commit:
+   23b482252836 ("drm/omap: add OMAP_BO flags to affect buffer allocation")
+]
 Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
  arch/arm/boot/dts/omap4.dtsi              |   9 +-
  arch/arm/configs/omap2plus_defconfig      |   2 +
- drivers/gpu/drm/omapdrm/omap_drv.c        | 198 ++++++++++-
+ drivers/gpu/drm/omapdrm/omap_drv.c        | 198 +++++++++-
  drivers/gpu/drm/omapdrm/omap_fb.c         |   2 +-
  drivers/gpu/drm/omapdrm/omap_fbdev.c      |   2 +-
- drivers/gpu/drm/omapdrm/omap_gem.c        | 381 +++++++++++++++++++++-
+ drivers/gpu/drm/omapdrm/omap_gem.c        | 437 +++++++++++++++++++++-
  drivers/gpu/drm/omapdrm/omap_gem.h        |   8 -
  drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c |   2 +-
- include/uapi/drm/omap_drm.h               |  79 ++++-
- 9 files changed, 653 insertions(+), 30 deletions(-)
+ include/uapi/drm/omap_drm.h               |  88 ++++-
+ 9 files changed, 715 insertions(+), 33 deletions(-)
 
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
 --- a/arch/arm/boot/dts/omap4.dtsi
 +++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -347,10 +347,11 @@
+@@ -347,10 +347,11 @@ target-module@56000000 {
  			#size-cells = <1>;
  			ranges = <0 0x56000000 0x2000000>;
  
@@ -102,7 +107,7 @@ diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_d
  CONFIG_BSD_PROCESS_ACCT=y
  CONFIG_IKCONFIG=y
  CONFIG_IKCONFIG_PROC=y
-@@ -371,6 +372,7 @@ CONFIG_DRM_PANEL_SHARP_LS037V7DW01=m
+@@ -370,6 +371,7 @@ CONFIG_DRM_PANEL_SHARP_LS037V7DW01=m
  CONFIG_DRM_PANEL_SONY_ACX565AKM=m
  CONFIG_DRM_PANEL_TPO_TD028TTEC1=m
  CONFIG_DRM_PANEL_TPO_TD043MTEA1=m
@@ -113,7 +118,7 @@ diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_d
 diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
 --- a/drivers/gpu/drm/omapdrm/omap_drv.c
 +++ b/drivers/gpu/drm/omapdrm/omap_drv.c
-@@ -30,6 +30,15 @@
+@@ -31,6 +31,15 @@
  #define DRIVER_MINOR		0
  #define DRIVER_PATCHLEVEL	0
  
@@ -129,7 +134,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  /*
   * mode config funcs
   */
-@@ -436,6 +445,19 @@ static int ioctl_get_param(struct drm_device *dev, void *data,
+@@ -437,6 +446,19 @@ static int ioctl_get_param(struct drm_device *dev, void *data,
  
  #define OMAP_BO_USER_MASK	0x00ffffff	/* flags settable by userspace */
  
@@ -149,7 +154,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  static int ioctl_gem_new(struct drm_device *dev, void *data,
  		struct drm_file *file_priv)
  {
-@@ -449,6 +471,57 @@ static int ioctl_gem_new(struct drm_device *dev, void *data,
+@@ -450,6 +472,57 @@ static int ioctl_gem_new(struct drm_device *dev, void *data,
  				   &args->handle);
  }
  
@@ -207,7 +212,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  static int ioctl_gem_info(struct drm_device *dev, void *data,
  		struct drm_file *file_priv)
  {
-@@ -470,19 +543,19 @@ static int ioctl_gem_info(struct drm_device *dev, void *data,
+@@ -471,19 +544,19 @@ static int ioctl_gem_info(struct drm_device *dev, void *data,
  	return ret;
  }
  
@@ -234,7 +239,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  	DRM_IOCTL_DEF_DRV(OMAP_GEM_INFO, ioctl_gem_info,
  			  DRM_RENDER_ALLOW),
  };
-@@ -491,19 +564,50 @@ static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] =
+@@ -492,19 +565,50 @@ static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] =
   * drm driver funcs
   */
  
@@ -287,7 +292,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  };
  
  static const struct file_operations omapdriver_fops = {
-@@ -521,7 +625,10 @@ static const struct file_operations omapdriver_fops = {
+@@ -522,7 +626,10 @@ static const struct file_operations omapdriver_fops = {
  static struct drm_driver omap_drm_driver = {
  	.driver_features = DRIVER_MODESET | DRIVER_GEM  |
  		DRIVER_ATOMIC | DRIVER_RENDER,
@@ -298,7 +303,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
  	.lastclose = drm_fb_helper_lastclose,
  #ifdef CONFIG_DEBUG_FS
  	.debugfs_init = omap_debugfs_init,
-@@ -553,6 +660,79 @@ static const struct soc_device_attribute omapdrm_soc_devices[] = {
+@@ -554,6 +661,79 @@ static const struct soc_device_attribute omapdrm_soc_devices[] = {
  	{ /* sentinel */ }
  };
  
@@ -381,7 +386,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_d
 diff --git a/drivers/gpu/drm/omapdrm/omap_fb.c b/drivers/gpu/drm/omapdrm/omap_fb.c
 --- a/drivers/gpu/drm/omapdrm/omap_fb.c
 +++ b/drivers/gpu/drm/omapdrm/omap_fb.c
-@@ -239,7 +239,7 @@ int omap_framebuffer_pin(struct drm_framebuffer *fb)
+@@ -236,7 +236,7 @@ int omap_framebuffer_pin(struct drm_framebuffer *fb)
  
  	for (i = 0; i < n; i++) {
  		struct plane *plane = &omap_fb->planes[i];
@@ -482,7 +487,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +int omap_gem_tiled_size(struct drm_gem_object *obj, uint16_t *w, uint16_t *h)
 +{
 +	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	if (omap_obj->flags & OMAP_BO_TILED) {
++	if (omap_obj->flags & OMAP_BO_TILED_MASK) {
 +		*w = omap_obj->width;
 +		*h = omap_obj->height;
 +		return 0;
@@ -518,10 +523,19 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  
 -	if (!omap_gem_is_contiguous(omap_obj) && priv->has_dmm) {
 +	if (!omap_gem_is_contiguous(omap_obj) && remap && priv->has_dmm) {
- 		if (omap_obj->dma_addr_cnt == 0) {
+ 		if (refcount_read(&omap_obj->dma_addr_cnt) == 0) {
  			u32 npages = obj->size >> PAGE_SHIFT;
  			enum tiler_fmt fmt = gem2fmt(omap_obj->flags);
-@@ -1068,6 +1123,233 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
+@@ -789,7 +844,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
+ 			if (omap_obj->flags & OMAP_BO_TILED_MASK) {
+ 				block = tiler_reserve_2d(fmt,
+ 						omap_obj->width,
+-						omap_obj->height, 0);
++						omap_obj->height, PAGE_SIZE);
+ 			} else {
+ 				block = tiler_reserve_1d(obj->size);
+ 			}
+@@ -1085,6 +1140,233 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
  }
  #endif
  
@@ -755,9 +769,19 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  /* -----------------------------------------------------------------------------
   * Constructor & Destructor
   */
-@@ -1095,6 +1377,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1101,6 +1383,9 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+ 	list_del(&omap_obj->mm_list);
+ 	mutex_unlock(&priv->list_lock);
+ 
++	if (omap_obj->flags & OMAP_BO_MEM_PIN)
++		omap_gem_unpin_locked(obj);
++
+ 	/*
+ 	 * We own the sole reference to the object at this point, but to keep
+ 	 * lockdep happy, we must still take the omap_obj_lock to call
+@@ -1112,6 +1397,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	/* The object should not be pinned. */
- 	WARN_ON(omap_obj->dma_addr_cnt > 0);
+ 	WARN_ON(refcount_read(&omap_obj->dma_addr_cnt) > 0);
  
 +	/* don't free externally allocated backing memory */
 +	if (omap_obj->flags & OMAP_BO_MEM_EXT)
@@ -766,7 +790,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	if (omap_obj->pages) {
  		if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
  			kfree(omap_obj->pages);
-@@ -1113,6 +1399,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1130,6 +1419,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  
  	mutex_unlock(&omap_obj->lock);
  
@@ -778,8 +802,72 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	drm_gem_object_release(obj);
  
  	mutex_destroy(&omap_obj->lock);
-@@ -1158,9 +1449,10 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
- 		 * use contiguous memory only if no TILER is available.
+@@ -1151,10 +1445,19 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
+ 		return false;
+ 	}
+ 
++	if ((flags & OMAP_BO_MEM_CONTIG) && (flags & OMAP_BO_MEM_DMM))
++		return false;
++
++	if ((flags & OMAP_BO_MEM_DMM) && !priv->usergart)
++		return false;
++
+ 	if (flags & OMAP_BO_TILED_MASK) {
+ 		if (!priv->usergart)
+ 			return false;
+ 
++		if (flags & OMAP_BO_MEM_CONTIG)
++			return false;
++
+ 		switch (flags & OMAP_BO_TILED_MASK) {
+ 		case OMAP_BO_TILED_8:
+ 		case OMAP_BO_TILED_16:
+@@ -1169,7 +1472,34 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
+ 	return true;
+ }
+ 
+-/* GEM buffer object constructor */
++/**
++ * omap_gem_new() - Create a new GEM buffer
++ * @dev: The DRM device
++ * @gsize: The requested size for the GEM buffer. If the buffer is tiled
++ *         (2D buffer), the size is a pair of values: height and width
++ *         expressed in pixels. If the buffers is not tiled, it is expressed
++ *         in bytes.
++ * @flags: Flags give additionnal information about the allocation:
++ *         OMAP_BO_TILED_x: use the TILER (2D buffers). The TILER container
++ *              unit can be 8, 16 or 32 bits. Cache is always disabled for
++ *              tiled buffers.
++ *         OMAP_BO_SCANOUT: Scannout buffer, consummable by the DSS
++ *         OMAP_BO_CACHED: Buffer CPU caching mode: cached
++ *         OMAP_BO_WC: Buffer CPU caching mode: write-combined
++ *         OMAP_BO_UNCACHED: Buffer CPU caching mode: uncached
++ *         OMAP_BO_MEM_CONTIG: The driver will use dma_alloc to get the memory.
++ *              This can be used to avoid DMM if the userspace knows it needs
++ *              more than 128M of memory at the same time.
++ *         OMAP_BO_MEM_DMM: The driver will use DMM to get the memory. There's
++ *              not much use for this flag at the moment, as on platforms with
++ *              DMM it is used by default, but it's here for completeness.
++ *         OMAP_BO_MEM_PIN: The driver will pin the memory at alloc time, and
++ *              keep it pinned. This can be used to 1) get an error at alloc
++ *              time if DMM space is full, and 2) get rid of the constant
++ *              pin/unpin operations which may have some effect on performance.
++ *
++ * Return: The GEM buffer or NULL if the allocation failed
++ */
+ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+ 		union omap_gem_size gsize, u32 flags)
+ {
+@@ -1197,15 +1527,17 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+ 		 */
+ 		flags &= ~(OMAP_BO_CACHED|OMAP_BO_WC|OMAP_BO_UNCACHED);
+ 		flags |= tiler_get_cpu_cache_flags();
+-	} else if ((flags & OMAP_BO_SCANOUT) && !priv->has_dmm) {
++	} else if ((flags & OMAP_BO_MEM_CONTIG) ||
++		((flags & OMAP_BO_SCANOUT) && !priv->has_dmm)) {
+ 		/*
+ 		 * If we don't have DMM, we must allocate scanout buffers
+ 		 * from contiguous DMA memory.
  		 */
  		flags |= OMAP_BO_MEM_DMA_API;
 -	} else if (!(flags & OMAP_BO_MEM_DMABUF)) {
@@ -791,7 +879,30 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		 */
  		flags |= OMAP_BO_MEM_SHMEM;
  	}
-@@ -1379,3 +1671,84 @@ void omap_gem_deinit(struct drm_device *dev)
+@@ -1257,12 +1589,22 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+ 			goto err_release;
+ 	}
+ 
++	if (flags & OMAP_BO_MEM_PIN) {
++		ret = omap_gem_pin(obj, NULL, false);
++		if (ret)
++			goto err_free_dma;
++	}
++
+ 	mutex_lock(&priv->list_lock);
+ 	list_add(&omap_obj->mm_list, &priv->obj_list);
+ 	mutex_unlock(&priv->list_lock);
+ 
+ 	return obj;
+ 
++err_free_dma:
++	if (flags & OMAP_BO_MEM_DMA_API)
++		dma_free_wc(dev->dev, size, omap_obj->vaddr,
++			    omap_obj->dma_addr);
+ err_release:
+ 	drm_gem_object_release(obj);
+ err_free:
+@@ -1424,3 +1766,84 @@ void omap_gem_deinit(struct drm_device *dev)
  	 */
  	kfree(priv->usergart);
  }
@@ -821,7 +932,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
 +	struct omap_gem_object *omap_obj;
 +	struct drm_gem_object *obj;
 +
-+	BUG_ON((flags & OMAP_BO_TILED) && !pages);
++	BUG_ON((flags & OMAP_BO_TILED_MASK) && !pages);
 +	if (dma_addr) {
 +		dev_info(dev->dev, "%s dma_addr: %08x\n", __func__, dma_addr);
 +		flags |= OMAP_BO_MEM_DMABUF;
@@ -918,7 +1029,23 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c b/drivers/gpu/drm/omapdrm
 diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
 --- a/include/uapi/drm/omap_drm.h
 +++ b/include/uapi/drm/omap_drm.h
-@@ -107,8 +107,8 @@ struct drm_omap_gem_info {
+@@ -47,6 +47,15 @@ struct drm_omap_param {
+ #define OMAP_BO_UNCACHED	0x00000004
+ #define OMAP_BO_CACHE_MASK	0x00000006
+ 
++/* Force allocation from contiguous DMA memory */
++#define OMAP_BO_MEM_CONTIG	0x00000008
++
++/* Force allocation via DMM */
++#define OMAP_BO_MEM_DMM		0x00000010
++
++/* Pin the buffer when allocating and keep pinned */
++#define OMAP_BO_MEM_PIN		0x00000020
++
+ /* Use TILER for the buffer. The TILER container unit can be 8, 16 or 32 bits. */
+ #define OMAP_BO_TILED_8		0x00000100
+ #define OMAP_BO_TILED_16	0x00000200
+@@ -107,8 +116,8 @@ struct drm_omap_gem_info {
  #define DRM_OMAP_GET_PARAM		0x00
  #define DRM_OMAP_SET_PARAM		0x01
  #define DRM_OMAP_GEM_NEW		0x03
@@ -929,7 +1056,7 @@ diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
  #define DRM_OMAP_GEM_INFO		0x06
  #define DRM_OMAP_NUM_IOCTLS		0x07
  
-@@ -119,6 +119,81 @@ struct drm_omap_gem_info {
+@@ -119,6 +128,81 @@ struct drm_omap_gem_info {
  #define DRM_IOCTL_OMAP_GEM_CPU_FINI	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_GEM_CPU_FINI, struct drm_omap_gem_cpu_fini)
  #define DRM_IOCTL_OMAP_GEM_INFO		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GEM_INFO, struct drm_omap_gem_info)
  
@@ -1012,4 +1139,4 @@ diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
  }
  #endif
 -- 
-2.24.1
+2.25.0
