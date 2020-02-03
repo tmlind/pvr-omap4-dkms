@@ -93,15 +93,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/proc_fs.h>
 
 #if defined(SUPPORT_DRI_DRM)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,5,0))
 #include <drm/drmP.h>
+#else
+#include <drm/drm_file.h>
+#endif
 #if defined(PVR_SECURE_DRM_AUTH_EXPORT)
 #include "env_perproc.h"
 #endif
 #endif
 
-#if defined(PVR_LDM_PLATFORM_MODULE)
 #include <linux/platform_device.h>
-#endif /* PVR_LDM_PLATFORM_MODULE */
 
 #if defined(PVR_LDM_PCI_MODULE)
 #include <linux/pci.h>
@@ -184,7 +186,7 @@ EXPORT_SYMBOL(PVRGetBufferClassJTable);
 static struct class *psPvrClass;
 #endif
 
-#if defined(SUPPORT_DRI_DRM_EXTERNAL) || !defined(SUPPORT_DRI_DRM)
+#if defined(SUPPORT_DRI_DRM_EXTERNAL) && !defined(SUPPORT_DRI_DRM)
 /*
  * This is the major number we use for all nodes in /dev.
  */
