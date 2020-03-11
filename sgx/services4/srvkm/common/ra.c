@@ -221,8 +221,8 @@ struct _RA_ARENA_
 #if defined(CONFIG_PROC_FS) && defined(DEBUG)
 #define PROC_NAME_SIZE		64
 
-	struct proc_dir_entry* pProcInfo;
-	struct proc_dir_entry* pProcSegs;
+	struct pvr_proc_dir_entry* pProcInfo;
+	struct pvr_proc_dir_entry* pProcSegs;
 
 	IMG_BOOL bInitProcEntry;
 #endif
@@ -1189,7 +1189,7 @@ RA_Create (IMG_CHAR *name,
 		IMG_INT ret;
 		IMG_CHAR szProcInfoName[PROC_NAME_SIZE];
 		IMG_CHAR szProcSegsName[PROC_NAME_SIZE];
-		struct proc_dir_entry* (*pfnCreateProcEntrySeq)(const IMG_CHAR *,
+		struct pvr_proc_dir_entry* (*pfnCreateProcEntrySeq)(const IMG_CHAR *,
 										 IMG_VOID*,
 										 pvr_next_proc_seq_t,
 										 pvr_show_proc_seq_t,
@@ -1305,7 +1305,7 @@ RA_Delete (RA_ARENA *pArena)
 	}
 #if defined(CONFIG_PROC_FS) && defined(DEBUG)
 	{
-		IMG_VOID (*pfnRemoveProcEntrySeq)(struct proc_dir_entry*);
+		IMG_VOID (*pfnRemoveProcEntrySeq)(struct pvr_proc_dir_entry*);
 
 		pfnRemoveProcEntrySeq = pArena->bInitProcEntry ? RemoveProcEntrySeq : RemovePerProcessProcEntrySeq;
 
