@@ -63,6 +63,7 @@ Signed-off-by: Jyri Sarha <jsarha@ti.com>
  - Update to use OMAP_BO_TILED_MASK
  - Add back reverted omapdrm commit:
    23b482252836 ("drm/omap: add OMAP_BO flags to affect buffer allocation")
+ - Pair drm_vma_node_allow with drm_vma_node_revoke to fix a memory leak
 ]
 Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
@@ -71,11 +72,11 @@ Not-yet-signed-off-by: Tony Lindgren <tony@atomide.com>
  drivers/gpu/drm/omapdrm/omap_drv.c        | 198 +++++++++-
  drivers/gpu/drm/omapdrm/omap_fb.c         |   2 +-
  drivers/gpu/drm/omapdrm/omap_fbdev.c      |   2 +-
- drivers/gpu/drm/omapdrm/omap_gem.c        | 437 +++++++++++++++++++++-
+ drivers/gpu/drm/omapdrm/omap_gem.c        | 440 +++++++++++++++++++++-
  drivers/gpu/drm/omapdrm/omap_gem.h        |   8 -
  drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c |   2 +-
  include/uapi/drm/omap_drm.h               |  88 ++++-
- 9 files changed, 715 insertions(+), 33 deletions(-)
+ 9 files changed, 718 insertions(+), 33 deletions(-)
 
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
 --- a/arch/arm/boot/dts/omap4.dtsi
@@ -458,7 +459,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  };
  
  #define to_omap_bo(x) container_of(x, struct omap_gem_object, base)
-@@ -133,6 +166,7 @@ struct omap_drm_usergart {
+@@ -133,18 +166,28 @@ struct omap_drm_usergart {
  /** get mmap offset */
  u64 omap_gem_mmap_offset(struct drm_gem_object *obj)
  {
@@ -466,20 +467,28 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	struct drm_device *dev = obj->dev;
  	int ret;
  	size_t size;
-@@ -145,6 +179,12 @@ u64 omap_gem_mmap_offset(struct drm_gem_object *obj)
+ 
+ 	/* Make it mmapable */
+ 	size = omap_gem_mmap_size(obj);
++
++	ret = drm_vma_node_allow(&obj->vma_node, omap_obj->file);
++	if (ret)
++		dev_warn(dev->dev, "drm_vma_node_allow: %i\n", ret);
++
+ 	ret = drm_gem_create_mmap_offset_size(obj, size);
+ 	if (ret) {
+ 		dev_err(dev->dev, "could not allocate mmap offset\n");
++		drm_vma_node_revoke(&obj->vma_node, omap_obj->file);
++
  		return 0;
  	}
  
-+	if (omap_obj->file && omap_obj->handle) {
-+		ret = drm_vma_node_allow(&obj->vma_node, omap_obj->file);
-+		if (ret)
-+			return ret;
-+	}
++	drm_vma_node_revoke(&obj->vma_node, omap_obj->file);
 +
  	return drm_vma_node_offset_addr(&obj->vma_node);
  }
  
-@@ -338,6 +378,18 @@ size_t omap_gem_mmap_size(struct drm_gem_object *obj)
+@@ -338,6 +381,18 @@ size_t omap_gem_mmap_size(struct drm_gem_object *obj)
  	return size;
  }
  
@@ -498,7 +507,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  /* -----------------------------------------------------------------------------
   * Fault Handling
   */
-@@ -571,6 +623,9 @@ int omap_gem_mmap_obj(struct drm_gem_object *obj,
+@@ -571,6 +626,9 @@ int omap_gem_mmap_obj(struct drm_gem_object *obj,
  		vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
  	}
  
@@ -508,7 +517,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	return 0;
  }
  
-@@ -764,7 +819,7 @@ void omap_gem_dma_sync_buffer(struct drm_gem_object *obj,
+@@ -764,7 +822,7 @@ void omap_gem_dma_sync_buffer(struct drm_gem_object *obj,
   *
   * Return 0 on success or a negative error code otherwise.
   */
@@ -517,7 +526,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  {
  	struct omap_drm_private *priv = obj->dev->dev_private;
  	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-@@ -772,7 +827,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
+@@ -772,7 +830,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
  
  	mutex_lock(&omap_obj->lock);
  
@@ -526,7 +535,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		if (refcount_read(&omap_obj->dma_addr_cnt) == 0) {
  			u32 npages = obj->size >> PAGE_SHIFT;
  			enum tiler_fmt fmt = gem2fmt(omap_obj->flags);
-@@ -789,7 +844,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
+@@ -789,7 +847,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
  			if (omap_obj->flags & OMAP_BO_TILED_MASK) {
  				block = tiler_reserve_2d(fmt,
  						omap_obj->width,
@@ -535,7 +544,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  			} else {
  				block = tiler_reserve_1d(obj->size);
  			}
-@@ -1085,6 +1140,233 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
+@@ -1085,6 +1143,233 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
  }
  #endif
  
@@ -769,7 +778,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  /* -----------------------------------------------------------------------------
   * Constructor & Destructor
   */
-@@ -1101,6 +1383,9 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1101,6 +1386,9 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	list_del(&omap_obj->mm_list);
  	mutex_unlock(&priv->list_lock);
  
@@ -779,7 +788,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	/*
  	 * We own the sole reference to the object at this point, but to keep
  	 * lockdep happy, we must still take the omap_obj_lock to call
-@@ -1112,6 +1397,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1112,6 +1400,10 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	/* The object should not be pinned. */
  	WARN_ON(refcount_read(&omap_obj->dma_addr_cnt) > 0);
  
@@ -790,7 +799,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	if (omap_obj->pages) {
  		if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
  			kfree(omap_obj->pages);
-@@ -1130,6 +1419,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1130,6 +1422,11 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  
  	mutex_unlock(&omap_obj->lock);
  
@@ -802,7 +811,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  	drm_gem_object_release(obj);
  
  	mutex_destroy(&omap_obj->lock);
-@@ -1151,10 +1445,19 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
+@@ -1151,10 +1448,19 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
  		return false;
  	}
  
@@ -822,7 +831,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		switch (flags & OMAP_BO_TILED_MASK) {
  		case OMAP_BO_TILED_8:
  		case OMAP_BO_TILED_16:
-@@ -1169,7 +1472,34 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
+@@ -1169,7 +1475,34 @@ static bool omap_gem_validate_flags(struct drm_device *dev, u32 flags)
  	return true;
  }
  
@@ -858,7 +867,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		union omap_gem_size gsize, u32 flags)
  {
-@@ -1197,15 +1527,17 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1197,15 +1530,17 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		 */
  		flags &= ~(OMAP_BO_CACHED|OMAP_BO_WC|OMAP_BO_UNCACHED);
  		flags |= tiler_get_cpu_cache_flags();
@@ -879,7 +888,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  		 */
  		flags |= OMAP_BO_MEM_SHMEM;
  	}
-@@ -1257,12 +1589,22 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1257,12 +1592,22 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  			goto err_release;
  	}
  
@@ -902,7 +911,7 @@ diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_g
  err_release:
  	drm_gem_object_release(obj);
  err_free:
-@@ -1424,3 +1766,84 @@ void omap_gem_deinit(struct drm_device *dev)
+@@ -1424,3 +1769,84 @@ void omap_gem_deinit(struct drm_device *dev)
  	 */
  	kfree(priv->usergart);
  }
@@ -1139,4 +1148,4 @@ diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
  }
  #endif
 -- 
-2.25.0
+2.25.1
